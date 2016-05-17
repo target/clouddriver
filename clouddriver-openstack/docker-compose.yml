@@ -1,0 +1,6 @@
+redis:
+  command: "redis-server --appendonly yes"
+  container_name: redis
+  expose:
+    - "6379"
+  image: redis

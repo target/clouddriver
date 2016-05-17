@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Netflix, Inc.
+ * Copyright 2015 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-rootProject.name="clouddriver"
+package com.netflix.spinnaker.clouddriver.openstack
 
-include 'clouddriver-core', 'clouddriver-security', 'clouddriver-web', 'clouddriver-aws', 'clouddriver-titus', 'clouddriver-google', 'clouddriver-cf', 'clouddriver-azure', 'clouddriver-kubernetes', 'clouddriver-docker', 'clouddriver-eureka', 'clouddriver-openstack', 'cats:cats-core', 'cats:cats-redis', 'cats:cats-test'
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.ComponentScan
+import org.springframework.context.annotation.Configuration
 
-def setBuildFile(project) {
-  project.buildFileName = "${project.name}.gradle"
-  project.children.each {
-    setBuildFile(it)
-  }
+
+@Configuration
+@ConditionalOnProperty('openstack.enabled')
+@ComponentScan(["com.netflix.spinnaker.clouddriver.openstack"])
+@EnableConfigurationProperties
+class OpenstackConfiguration {
+
 }
-
-rootProject.children.each {
-  setBuildFile(it)
-}
-
