@@ -38,7 +38,7 @@ class OpenstackProviderFactory {
         .credentials(credentials.username, credentials.password)
         .tenantName(credentials.tenantName)
         .authenticate()
-      provider = new OpenstackClientV2Provider(osClient)
+      provider = new OpenstackClientV2Provider(osClient, credentials.regions)
     } else if (AccountType.V3.value() == credentials.accountType) {
       osClient = OSFactory.builderV3()
         .withConfig(config)
@@ -46,7 +46,7 @@ class OpenstackProviderFactory {
         .credentials(credentials.username, credentials.password, Identifier.byName(credentials.domainName))
         .scopeToProject(Identifier.byName(credentials.tenantName), Identifier.byName(credentials.domainName))
         .authenticate()
-      provider = new OpenstackClientV3Provider(osClient)
+      provider = new OpenstackClientV3Provider(osClient, credentials.regions)
     } else {
       throw new IllegalArgumentException("Unknown account type ${credentials.accountType}")
     }

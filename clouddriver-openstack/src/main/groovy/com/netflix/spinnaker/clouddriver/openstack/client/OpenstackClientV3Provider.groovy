@@ -26,9 +26,11 @@ import org.openstack4j.openstack.OSFactory
 class OpenstackClientV3Provider extends OpenstackClientProvider {
 
   Token token
+  List<String> regions
 
-  OpenstackClientV3Provider(OSClient.OSClientV3 client) {
+  OpenstackClientV3Provider(OSClient.OSClientV3 client, List<String> regions) {
     this.token = client.token
+    this.regions = regions
   }
 
   @Override
@@ -42,5 +44,19 @@ class OpenstackClientV3Provider extends OpenstackClientProvider {
   }
 
   //TODO v3 specific operations
-
+  /**
+   * Returns configuration based regions if provided, otherwise will use the
+   * API to look up regions and return a list.
+   * @return
+   */
+  @Override
+  List<String> getAllRegions() {
+    handleRequest {
+      List<String> result = this.regions
+      if (!result) {
+        result = client.identity().regions().list()?.collect { it.id }
+      }
+      result
+    }
+  }
 }
