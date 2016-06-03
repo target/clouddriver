@@ -16,7 +16,7 @@
 
 package com.netflix.spinnaker.clouddriver.openstack.client
 
-import com.netflix.spinnaker.clouddriver.openstack.deploy.description.securitygroup.OpenstackSecurityGroupDescription
+import com.netflix.spinnaker.clouddriver.openstack.deploy.description.securitygroup.UpsertOpenstackSecurityGroupDescription
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackOperationException
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackProviderException
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperations
@@ -89,7 +89,7 @@ abstract class OpenstackClientProvider {
    * @param description description of the security group
    * @param rules list of rules for the security group
    */
-  void upsertSecurityGroup(String securityGroupId, String securityGroupName, String description, List<OpenstackSecurityGroupDescription.Rule> rules) {
+  void upsertSecurityGroup(String securityGroupId, String securityGroupName, String description, List<UpsertOpenstackSecurityGroupDescription.Rule> rules) {
 
     handleRequest(AtomicOperations.UPSERT_SECURITY_GROUP) {
 
@@ -279,6 +279,17 @@ abstract class OpenstackClientProvider {
       throw new OpenstackOperationException("Could not find server with id ${instanceId}")
     }
     server
+  }
+
+  /**
+   * Deletes a security group.
+   *
+   * @param securityGroupId id of the security group
+   */
+  void deleteSecurityGroup(String securityGroupId) {
+    handleRequest(AtomicOperations.DELETE_SECURITY_GROUP) {
+      client.compute().securityGroups().delete(securityGroupId)
+    }
   }
 
   /**
