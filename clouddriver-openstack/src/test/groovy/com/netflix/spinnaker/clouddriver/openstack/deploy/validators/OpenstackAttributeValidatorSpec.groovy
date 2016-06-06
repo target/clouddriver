@@ -47,7 +47,7 @@ class OpenstackAttributeValidatorSpec extends Specification {
     then:
     actual == result
     if (!result) {
-      1 * errors.rejectValue('context.test','context.test.invalid (Must match [A-Z]+)')
+      1 * errors.rejectValue('context.test', 'context.test.invalid (Must match [A-Z]+)')
     }
 
     where:
@@ -64,7 +64,7 @@ class OpenstackAttributeValidatorSpec extends Specification {
     then:
     actual == result
     if (!result) {
-      1 * errors.rejectValue('context.test','context.test.invalid (Must be one of [1234])')
+      1 * errors.rejectValue('context.test', 'context.test.invalid (Must be one of [1234])')
     }
 
     where:
@@ -76,7 +76,7 @@ class OpenstackAttributeValidatorSpec extends Specification {
 
   def "Reject"() {
     when:
-    validator.reject('foo','reason')
+    validator.reject('foo', 'reason')
 
     then:
     1 * errors.rejectValue('context.foo', 'context.foo.invalid (reason)')
@@ -105,7 +105,7 @@ class OpenstackAttributeValidatorSpec extends Specification {
     then:
     actual == result
     if (!result) {
-      1 * errors.rejectValue('context.test','context.test.empty')
+      1 * errors.rejectValue('context.test', 'context.test.empty')
     }
 
     where:
@@ -122,7 +122,7 @@ class OpenstackAttributeValidatorSpec extends Specification {
     then:
     actual == result
     if (!result) {
-      1 * errors.rejectValue('context.test','context.test.negative')
+      1 * errors.rejectValue('context.test', 'context.test.negative')
     }
 
     where:
@@ -139,7 +139,7 @@ class OpenstackAttributeValidatorSpec extends Specification {
     then:
     actual == result
     if (!result) {
-      1 * errors.rejectValue('context.test','context.test.notPositive')
+      1 * errors.rejectValue('context.test', 'context.test.notPositive')
     }
 
     where:
@@ -196,4 +196,71 @@ class OpenstackAttributeValidatorSpec extends Specification {
     1 * errors.rejectValue('context.account', 'context.account.notFound')
   }
 
+  def "ValidateUUID"() {
+    when:
+    boolean actual = validator.validateUUID(value, 'test')
+
+    then:
+    actual == result
+    if (!result) {
+      1 * errors.rejectValue('context.test', "context.test.${expectedRejection}")
+    }
+
+    where:
+    value                                  | result | expectedRejection
+    '62e3b610-281a-11e6-bdf4-0800200c9a66' | true   | ''
+    '123'                                  | false  | 'notUUID'
+    ''                                     | false  | 'empty'
+  }
+
+  def "ValidateHttpMethod"() {
+    when:
+    boolean actual = validator.validateHttpMethod(value, 'test')
+
+    then:
+    actual == result
+    if (!result) {
+      validator.errors.getFieldError('context.test')?.rejectedValue == expectedRejectedValue
+    }
+
+    where:
+    value    | result | expectedRejectedValue
+    'GET'    | true   | ''
+    'GETTER' | false  | 'context.test.invalidHttpMethod'
+    ''       | false  | 'context.test.empty'
+  }
+
+  def "ValidateHttpStatus"() {
+    when:
+    boolean actual = validator.validateHttpStatusCode(value, 'test')
+
+    then:
+    actual == result
+    if (!result) {
+      validator.errors.getFieldError('context.test')?.rejectedValue == expectedRejectedValue
+    }
+
+    where:
+    value | result | expectedRejectedValue
+    200   | true   | ''
+    199   | false  | 'context.test.invalidHttpStatusCode'
+    null  | false  | 'context.test.invalidHttpStatusCode'
+  }
+
+  def "ValidateURL"() {
+    when:
+    boolean actual = validator.validateURL(value, 'test')
+
+    then:
+    actual == result
+    if (!result) {
+      validator.errors.getFieldError('context.test')?.rejectedValue == expectedRejectedValue
+    }
+
+    where:
+    value                   | result | expectedRejectedValue
+    'http://www.goggle.com' | true   | ''
+    'ftp:..com'             | false  | 'context.test.invalidURL'
+    ''                      | false  | 'context.test.empty'
+  }
 }
