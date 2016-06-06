@@ -18,6 +18,9 @@ package com.netflix.spinnaker.clouddriver.openstack.deploy.validators
 
 import com.netflix.spinnaker.clouddriver.openstack.security.OpenstackCredentials
 import com.netflix.spinnaker.clouddriver.security.AccountCredentialsProvider
+import org.apache.commons.validator.routines.UrlValidator
+import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
 import org.springframework.validation.Errors
 
 /**
@@ -28,10 +31,13 @@ class OpenstackAttributeValidator {
 
   String context
   Errors errors
+  UrlValidator urlValidator
 
   OpenstackAttributeValidator(String context, Errors errors) {
     this.context = context
-    this.errors = errors  }
+    this.errors = errors
+    this.urlValidator = new UrlValidator(['http', 'https'] as String[])
+  }
 
   static final maxPort = (1 << 16) - 1
 
@@ -74,7 +80,18 @@ class OpenstackAttributeValidator {
     if (value != "" && value != null && value != []) {
       result = true
     } else {
-      errors.rejectValue("${context}.${attribute}",  "${context}.${attribute}.empty")
+      errors.rejectValue("${context}.${attribute}", "${context}.${attribute}.empty")
+      result = false
+    }
+    result
+  }
+
+  boolean validateNotEmpty(List value, String attribute) {
+    def result
+    if (value != null && value.size() > 0) {
+      result = true
+    } else {
+      errors.rejectValue("${context}.${attribute}", "${context}.${attribute}.empty")
       result = false
     }
     result
@@ -113,11 +130,82 @@ class OpenstackAttributeValidator {
     if (result) {
       def openstackCredentials = accountCredentialsProvider.getCredentials(account)
       if (!(openstackCredentials?.credentials instanceof OpenstackCredentials)) {
-        errors.rejectValue("${context}.account",  "${context}.account.notFound")
+        errors.rejectValue("${context}.account", "${context}.account.notFound")
         result = false
       }
     }
     result
   }
 
+  /**
+   * Validate string is in UUID format.
+   * @param value
+   * @param attribute
+   * @return
+   */
+  def validateUUID(String value, String attribute) {
+    boolean result = validateNotEmpty(value, attribute)
+    if (value) {
+      try {
+        UUID.fromString(value)
+      } catch (IllegalArgumentException e) {
+        errors.rejectValue("${context}.${attribute}", "${context}.${attribute}.notUUID")
+        result = false
+      }
+    }
+    result
+  }
+
+  /**
+   * Validate integer is an HTTP status code
+   * @param value
+   * @param attribute
+   * @return
+   */
+  def validateHttpStatusCode(Integer value, String attribute) {
+    boolean result = validateNotEmpty(value, attribute)
+    if (result) {
+      try {
+        HttpStatus.valueOf(value)
+      } catch (IllegalArgumentException e) {
+        reject(attribute, 'invalid Http Status Code')
+        result = false
+      }
+    }
+    result
+  }
+
+  /**
+   * Validate string is an HTTP method
+   * @param value
+   * @param attribute
+   * @return
+   */
+  def validateHttpMethod(String value, String attribute) {
+    boolean result = validateNotEmpty(value, attribute)
+    if (result) {
+      try {
+        HttpMethod.valueOf(value)
+      } catch (IllegalArgumentException e) {
+        reject(attribute, 'invalid Http Method')
+        result = false
+      }
+    }
+    result
+  }
+
+  /**
+   * Validate string is a URL
+   * @param value
+   * @param attribute
+   * @return
+   */
+  def validateURL(String value, String attribute) {
+    boolean result = validateNotEmpty(value, attribute)
+    if (result && !urlValidator.isValid(value)) {
+      result = false
+      reject(attribute, 'invalid URL')
+    }
+    result
+  }
 }

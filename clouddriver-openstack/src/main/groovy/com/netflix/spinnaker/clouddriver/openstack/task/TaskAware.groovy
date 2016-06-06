@@ -1,11 +1,11 @@
 /*
- * Copyright 2016 Veritas Technologies LLC.
+ * Copyright 2016 Target, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,11 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.netflix.spinnaker.clouddriver.openstack.task
 
-dependencies {
-  compile project(":clouddriver-core")
-  compile group: 'org.pacesys', name: 'openstack4j', version: '3.0.0'
-  compile group: 'commons-validator', name: 'commons-validator', version: '1.5.1'
-  compile spinnaker.dependency('bootActuator')
-  compile spinnaker.dependency('bootWeb')
+import com.netflix.spinnaker.clouddriver.data.task.Task
+import com.netflix.spinnaker.clouddriver.data.task.TaskRepository
+
+trait TaskAware {
+  static final String UPSERT_LOADBALANCER_PHASE = "UPSERT_LOAD_BALANCER"
+
+  Task getTask() {
+    TaskRepository.threadLocalTask.get()
+  }
 }
