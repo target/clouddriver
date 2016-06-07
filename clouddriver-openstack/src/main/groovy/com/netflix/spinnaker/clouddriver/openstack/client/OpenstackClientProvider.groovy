@@ -18,16 +18,18 @@ package com.netflix.spinnaker.clouddriver.openstack.client
 
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.securitygroup.OpenstackSecurityGroupDescription
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackOperationException
+import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackProviderException
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperations
 import org.apache.commons.lang.StringUtils
 import org.openstack4j.api.Builders
 import org.openstack4j.api.OSClient
-import org.openstack4j.api.compute.ComputeSecurityGroupService
+import org.openstack4j.api.networking.ext.LoadBalancerService
 import org.openstack4j.model.common.ActionResponse
 import org.openstack4j.model.compute.IPProtocol
 import org.openstack4j.model.compute.RebootType
 import org.openstack4j.model.compute.SecGroupExtension
 import org.openstack4j.model.heat.Stack
+import org.openstack4j.model.network.ext.LbPool
 
 /**
  * Provides access to the Openstack API.
@@ -72,20 +74,20 @@ abstract class OpenstackClientProvider {
    */
   void upsertSecurityGroup(String securityGroupId, String securityGroupName, String description, List<OpenstackSecurityGroupDescription.Rule> rules) {
 
-     handleRequest(AtomicOperations.UPSERT_SECURITY_GROUP) {
+    handleRequest(AtomicOperations.UPSERT_SECURITY_GROUP) {
 
-       // The call to getClient reauthentictes via a token, so grab once for this method to avoid unnecessary reauthentications
-       def securityGroupsApi = client.compute().securityGroups()
+      // The call to getClient reauthentictes via a token, so grab once for this method to avoid unnecessary reauthentications
+      def securityGroupsApi = client.compute().securityGroups()
 
       // Try getting existing security group, update if needed
       SecGroupExtension securityGroup
       if (StringUtils.isNotEmpty(securityGroupId)) {
         securityGroup = securityGroupsApi.get(securityGroupId)
       }
-      if (securityGroup  == null) {
+      if (securityGroup == null) {
         securityGroup = securityGroupsApi.create(securityGroupName, description)
       } else {
-        securityGroup  = securityGroupsApi.update(securityGroup.id, securityGroupName, description)
+        securityGroup = securityGroupsApi.update(securityGroup.id, securityGroupName, description)
       }
 
       // TODO: Find the different between existing rules and only apply that instead of deleting and re-creating all the rules
@@ -123,7 +125,7 @@ abstract class OpenstackClientProvider {
 
   /**
    * List existing heat stacks (server groups)
-   * @return List<? extends Stack> stacks
+   * @return List < ? extends Stack >  stacks
    */
   List<? extends Stack> listStacks() {
     def stacks
@@ -135,6 +137,57 @@ abstract class OpenstackClientProvider {
     stacks
   }
 
+  /**
+   * Get the load balanacer pool associated with the id.
+   * @param lbPoolId
+   * @return
+   */
+  LbPool getLoadBalancerPool(String lbPoolId) {
+    LbPool pool = null
+    handleRequest {
+      pool = client.networking().loadbalancers().lbPool().get(lbPoolId)
+    }
+    if (pool == null) {
+      throw new OpenstackProviderException("Unable to find load balancer ${lbPoolId}")
+    }
+    pool
+  }
+
+  /**
+   * Remove load balancer pool.
+   * @param region
+   * @param poolId
+   */
+  void deleteVip(String region, String vipId) {
+    handleRequest {
+      getRegionClient(region).networking().loadbalancers().vip().delete(vipId)
+    }
+  }
+
+  /**
+   * Remove load balancer pool.
+   * @param region
+   * @param poolId
+   */
+  void deleteLoadBalancerPool(String region, String poolId) {
+    handleRequest {
+      getRegionClient(region).networking().loadbalancers().lbPool().delete(poolId)
+    }
+  }
+
+  /**
+   * Disassociates and removes health monitor from load balancer.
+   * @param region
+   * @param lbPoolId
+   * @param healthMonitorId
+   */
+  void disassociateAndRemoveHealthMonitor(String region, String lbPoolId, String healthMonitorId) {
+    handleRequest {
+      LoadBalancerService loadBalancerService = getRegionClient(region).networking().loadbalancers()
+      loadBalancerService.lbPool().disAssociateHealthMonitor(lbPoolId, healthMonitorId)
+      loadBalancerService.healthMonitor().delete(healthMonitorId)
+    }
+  }
 
   /**
    * Handler for an Openstack4J request with error common handling.
@@ -156,6 +209,24 @@ abstract class OpenstackClientProvider {
   }
 
   /**
+   * Handler for an Openstack4J request with error common handling.
+   * @param closure makes the needed Openstack4J request
+   * @return returns the result from the closure
+   */
+  def handleRequest(Closure closure) {
+    def result
+    try {
+      result = closure()
+    } catch (Exception e) {
+      throw new OpenstackProviderException('Unable to process request', e)
+    }
+    if (result instanceof ActionResponse && !result.isSuccess()) {
+      throw new OpenstackProviderException(result)
+    }
+    result
+  }
+
+  /**
    * Thread-safe way to get client.
    * @return
    */
@@ -166,4 +237,8 @@ abstract class OpenstackClientProvider {
    * @return
    */
   abstract String getTokenId()
+
+  OSClient getRegionClient(String region) {
+    client.useRegion(region)
+  }
 }
