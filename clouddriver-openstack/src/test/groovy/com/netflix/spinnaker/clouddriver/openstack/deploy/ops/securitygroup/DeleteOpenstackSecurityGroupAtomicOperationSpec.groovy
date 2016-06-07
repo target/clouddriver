@@ -55,5 +55,6 @@ class DeleteOpenstackSecurityGroupAtomicOperationSpec extends Specification {
 
     then:
     1 * provider.deleteSecurityGroup(id)
+    noExceptionThrown()
   }
 }
