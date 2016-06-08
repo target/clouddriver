@@ -34,15 +34,8 @@ class DestroyOpenstackAtomicOperationValidator extends DescriptionValidator<Dest
 
   @Override
   void validate(List priorDescriptions, DestroyOpenstackAtomicOperationDescription description, Errors errors) {
-    def validator = new OpenstackAttributeValidator("deployOpenstackAtomicOperationDescription", errors)
-
+    def validator = new OpenstackAttributeValidator("destroyOpenstackAtomicOperationDescription", errors)
     validator.validateCredentials(description.account, accountCredentialsProvider)
-    validator.validateApplication(description.application, "application")
-    validator.validateStack(description.stack, "stack")
-    validator.validateNotEmpty(description.region, "region")
-    validator.validateDetails(description.freeFormDetails, "details")
-    validator.validateHeatTemplate(description.heatTemplate, "heatTemplate", accountCredentialsProvider, description.account)
-    validator.validateNonNegative(description.timeoutMins, "timeoutMins")
-
+    validator.validateNotEmpty(description.serverGroupName, "serverGroupName")
   }
 }

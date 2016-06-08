@@ -40,7 +40,7 @@ class DestroyOpenstackAtomicOperation implements AtomicOperation<Void> {
   }
 
   /*
-  * curl -X POST -H "Content-Type: application/json" -d '[ { "createServerGroup": { "stack": "test-stack", "application": "myapp", "region": "RegionOne", "heatTemplate": "{\"heat_template_version\":\"2013-05-23\",\"description\":\"Simple template to test heat commands\",\"parameters\":{\"flavor\":{\"default\":\"m1.nano\",\"type\":\"string\"}},\"resources\":{\"hello_world\":{\"type\":\"OS::Nova::Server\",\"properties\":{\"flavor\":{\"get_param\":\"flavor\"},\"image\":\"cirros-0.3.4-x86_64-uec\",\"user_data\":\"\"}}}}", "timeoutMins": "5", "account": "test" }} ]' localhost:7002/openstack/ops
+  * curl -X POST -H "Content-Type: application/json" -d '[ { "destroyServerGroup": { "serverGroupName": "drmaastestapp-drmaasteststack-v000", "region": "TTEOSCORE1", "account": "test" }} ]' localhost:7002/openstack/ops
   * curl -X GET -H "Accept: application/json" localhost:7002/task/1
   */
   @Override
@@ -49,12 +49,12 @@ class DestroyOpenstackAtomicOperation implements AtomicOperation<Void> {
 
     task.updateStatus BASE_PHASE, "Initializing destruction of server group"
 
-    task.updateStatus BASE_PHASE, "Looking up heat stack ${description.stack}..."
-    Stack stack = provider.getStack(description.stack)
-    task.updateStatus BASE_PHASE, "Found heat stack ${description.stack}..."
+    task.updateStatus BASE_PHASE, "Looking up heat stack ${description.serverGroupName}..."
+    Stack stack = provider.getStack('TTEOSCORE1', description.serverGroupName) //TODO pull in region from PR
+    task.updateStatus BASE_PHASE, "Found heat stack ${description.serverGroupName}..."
 
     task.updateStatus BASE_PHASE, "Destroying heat stack ${stack.name} with id ${stack.id}..."
-    provider.destroy(stack)
+    provider.destroy('TTEOSCORE1', stack) //TODO pull in region from PR
     task.updateStatus BASE_PHASE, "Destroyed heat stack ${stack.name} with id ${stack.id}..."
 
     task.updateStatus BASE_PHASE, "Successfully destroyed server group"

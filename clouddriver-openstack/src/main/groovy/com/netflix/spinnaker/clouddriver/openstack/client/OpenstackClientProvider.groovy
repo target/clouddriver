@@ -298,7 +298,6 @@ abstract class OpenstackClientProvider {
     }
     memberId
   }
-
   /**
    * Get a compute server based on id.
    * @param instanceId

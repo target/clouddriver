@@ -24,14 +24,7 @@ import groovy.transform.Canonical
 @AutoClone
 @Canonical
 class DestroyOpenstackAtomicOperationDescription extends OpenstackAtomicOperationDescription implements DeployDescription {
-  String application
-  String stack
-  String freeFormDetails
-  String region
-  String heatTemplate
-  Map <String, String> parameters
-  Boolean disableRollback
-  Integer timeoutMins
+  String serverGroupName
 }
 
 
