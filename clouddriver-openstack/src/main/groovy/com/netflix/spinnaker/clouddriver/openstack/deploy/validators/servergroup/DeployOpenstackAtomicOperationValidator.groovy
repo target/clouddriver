@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.validation.Errors
 
+//TODO this needs to be tested
 @OpenstackOperation(AtomicOperations.CREATE_SERVER_GROUP)
 @Component("deployOpenstackAtomicOperationValidator")
 class DeployOpenstackAtomicOperationValidator extends DescriptionValidator<DeployOpenstackAtomicOperationDescription> {
