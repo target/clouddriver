@@ -36,6 +36,7 @@ class DestroyOpenstackAtomicOperationValidator extends DescriptionValidator<Dest
   void validate(List priorDescriptions, DestroyOpenstackAtomicOperationDescription description, Errors errors) {
     def validator = new OpenstackAttributeValidator("destroyOpenstackAtomicOperationDescription", errors)
     validator.validateCredentials(description.account, accountCredentialsProvider)
+    validator.validateNotEmpty(description.region, "region")
     validator.validateNotEmpty(description.serverGroupName, "serverGroupName")
   }
 }

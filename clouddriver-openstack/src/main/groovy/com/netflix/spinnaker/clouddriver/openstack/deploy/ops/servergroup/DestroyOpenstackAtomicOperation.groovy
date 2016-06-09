@@ -22,6 +22,8 @@ import com.netflix.spinnaker.clouddriver.openstack.client.OpenstackClientProvide
 import com.netflix.spinnaker.clouddriver.openstack.deploy.OpenstackServerGroupNameResolver
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergroup.DeployOpenstackAtomicOperationDescription
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergroup.DestroyOpenstackAtomicOperationDescription
+import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackOperationException
+import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackProviderException
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperation
 import groovy.util.logging.Slf4j
 import org.openstack4j.model.heat.Stack
@@ -45,18 +47,22 @@ class DestroyOpenstackAtomicOperation implements AtomicOperation<Void> {
   */
   @Override
   Void operate(List priorOutputs) {
-    OpenstackClientProvider provider = description.credentials.provider
+    try {
+      OpenstackClientProvider provider = description.credentials.provider
 
-    task.updateStatus BASE_PHASE, "Initializing destruction of server group"
+      task.updateStatus BASE_PHASE, "Initializing destruction of server group"
 
-    task.updateStatus BASE_PHASE, "Looking up heat stack ${description.serverGroupName}..."
-    Stack stack = provider.getStack('TTEOSCORE1', description.serverGroupName) //TODO pull in region from PR
-    task.updateStatus BASE_PHASE, "Found heat stack ${description.serverGroupName}..."
+      task.updateStatus BASE_PHASE, "Looking up heat stack ${description.serverGroupName}..."
+      Stack stack = provider.getStack(description.region, description.serverGroupName)
+      task.updateStatus BASE_PHASE, "Found heat stack ${description.serverGroupName}..."
 
-    task.updateStatus BASE_PHASE, "Destroying heat stack ${stack.name} with id ${stack.id}..."
-    provider.destroy('TTEOSCORE1', stack) //TODO pull in region from PR
-    task.updateStatus BASE_PHASE, "Destroyed heat stack ${stack.name} with id ${stack.id}..."
+      task.updateStatus BASE_PHASE, "Destroying heat stack ${stack.name} with id ${stack.id}..."
+      provider.destroy(description.region, stack)
+      task.updateStatus BASE_PHASE, "Destroyed heat stack ${stack.name} with id ${stack.id}..."
 
-    task.updateStatus BASE_PHASE, "Successfully destroyed server group"
+      task.updateStatus BASE_PHASE, "Successfully destroyed server group"
+    } catch (OpenstackProviderException e) {
+      throw new OpenstackOperationException("Failed to destroy server group $description.serverGroupName in region $description.region", e)
+    }
   }
 }
