@@ -80,49 +80,76 @@ abstract class OpenstackClientProvider {
   }
 
   /**
-   * Create or update a security group, applying a list of rules. If the securityGroupId is provided, updates an existing
-   * security group, else creates a new security group.
-   *
-   * Note: 2 default egress rules are created when creating a new security group
-   * automatically with remote IP prefixes 0.0.0.0/0 and ::/0.
-   *
-   * @param securityGroupId id of an existing security group to update
-   * @param securityGroupName name security group
-   * @param description description of the security group
-   * @param rules list of rules for the security group
+   * Creates a security group rule.
+   * @param region the region to create the rule in
+   * @param securityGroupId id of the security group which this rule belongs to
+   * @param protocol the protocol of the rule
+   * @param cidr the cidr for the rule
+   * @param fromPort the fromPort for the rule
+   * @param toPort the toPort for the rule
+   * @return the created rule
    */
-  void upsertSecurityGroup(String securityGroupId, String securityGroupName, String description, List<UpsertOpenstackSecurityGroupDescription.Rule> rules) {
-
+  SecGroupExtension.Rule createSecurityGroupRule(String region, String securityGroupId, IPProtocol protocol, String cidr, int fromPort, int toPort) {
     handleRequest(AtomicOperations.UPSERT_SECURITY_GROUP) {
-
-      // The call to getClient reauthentictes via a token, so grab once for this method to avoid unnecessary reauthentications
-      def securityGroupsApi = client.compute().securityGroups()
-
-      // Try getting existing security group, update if needed
-      SecGroupExtension securityGroup
-      if (StringUtils.isNotEmpty(securityGroupId)) {
-        securityGroup = securityGroupsApi.get(securityGroupId)
-      }
-      if (securityGroup == null) {
-        securityGroup = securityGroupsApi.create(securityGroupName, description)
-      } else {
-        securityGroup = securityGroupsApi.update(securityGroup.id, securityGroupName, description)
-      }
-
-      // TODO: Find the different between existing rules and only apply that instead of deleting and re-creating all the rules
-      securityGroup.rules.each { rule ->
-        securityGroupsApi.deleteRule(rule.id)
-      }
-
-      rules.each { rule ->
-        securityGroupsApi.createRule(Builders.secGroupRule()
-          .parentGroupId(securityGroup.id)
-          .protocol(IPProtocol.valueOf(rule.ruleType))
-          .cidr(rule.cidr)
-          .range(rule.fromPort, rule.toPort).build())
-      }
+      client.useRegion(region).compute().securityGroups().createRule(Builders.secGroupRule()
+        .parentGroupId(securityGroupId)
+        .protocol(protocol)
+        .cidr(cidr)
+        .range(fromPort, toPort)
+        .build())
     }
   }
+
+  /**
+   * Deletes a security group rule
+   * @param region the region to delete the rule from
+   * @param id id of the rule to delete
+   */
+  void deleteSecurityGroupRule(String region, String id) {
+    handleRequest(AtomicOperations.UPSERT_SECURITY_GROUP) {
+      client.useRegion(region).compute().securityGroups().deleteRule(id)
+    }
+  }
+
+  /**
+   * Updates a security group with the new name and description
+   * @param region the region the security group is in
+   * @param id the id of the security group to update
+   * @param name the new name for the security group
+   * @param description the new description for the security group
+   * @return the updated security group
+   */
+  SecGroupExtension updateSecurityGroup(String region, String id, String name, String description) {
+    handleRequest(AtomicOperations.UPSERT_SECURITY_GROUP) {
+      client.useRegion(region).compute().securityGroups().update(id, name, description)
+    }
+  }
+
+  /**
+   * Creates a security group with the given name and description
+   * @return the created security group
+     */
+  SecGroupExtension createSecurityGroup(String region, String name, String description) {
+    handleRequest(AtomicOperations.UPSERT_SECURITY_GROUP) {
+      client.useRegion(region).compute().securityGroups().create(name, description)
+    }
+  }
+
+  /**
+   * Returns the security group for the given id.
+   * @param region the region to look up the security group in
+   * @param id id of the security group.
+     */
+  SecGroupExtension getSecurityGroup(String region, String id) {
+    handleRequest(AtomicOperations.UPSERT_SECURITY_GROUP) {
+      SecGroupExtension securityGroup = client.useRegion(region).compute().securityGroups().get(id)
+      if (securityGroup == null) {
+        throw new OpenstackProviderException("Unable to find security group ${id}")
+      }
+      securityGroup
+    }
+  }
+
 
   /**
    * Create a Spinnaker Server Group (Openstack Heat Stack).

@@ -68,151 +68,6 @@ class OpenstackClientProviderSpec extends Specification {
     mockClient.useRegion(region) >> mockClient
   }
 
-  def "create security group without rules"() {
-    setup:
-    def name = "sec-group-1"
-    def description = "A description"
-    ComputeService compute = Mock()
-    ComputeSecurityGroupService securityGroupApi = Mock()
-    SecGroupExtension securityGroup = Mock()
-
-    when:
-    provider.upsertSecurityGroup(null, name, description, [])
-
-    then:
-    1 * mockClient.compute() >> compute
-    1 * compute.securityGroups() >> securityGroupApi
-    1 * securityGroupApi.create(name, description) >> securityGroup
-    0 * securityGroupApi.createRule(_)
-    0 * securityGroupApi.deleteRule(_)
-    noExceptionThrown()
-  }
-
-  def "create security group with rules"() {
-    setup:
-    ComputeService compute = Mock()
-    ComputeSecurityGroupService securityGroupService = Mock()
-    mockClient.compute() >> compute
-    compute.securityGroups() >> securityGroupService
-
-    def name = "sec-group-1"
-    def description = "A description"
-    SecGroupExtension securityGroup = new NovaSecGroupExtension()
-    def rules = [
-      new UpsertOpenstackSecurityGroupDescription.Rule(fromPort: 80, toPort: 80, cidr: "0.0.0.0/0"),
-      new UpsertOpenstackSecurityGroupDescription.Rule(fromPort: 443, toPort: 443, cidr: "0.0.0.0/0")
-    ]
-
-    when:
-    provider.upsertSecurityGroup(null, name, description, rules)
-
-    then:
-    1 * securityGroupService.create(name, description) >> securityGroup
-    0 * securityGroupService.deleteRule(_)
-    rules.each { rule ->
-      1 * securityGroupService.createRule({ SecGroupExtension.Rule r ->
-        r.toPort == rule.toPort && r.fromPort == rule.fromPort && r.IPProtocol == IPProtocol.TCP
-      })
-    }
-    noExceptionThrown()
-  }
-
-  def "update security group"() {
-    setup:
-    ComputeService compute = Mock()
-    ComputeSecurityGroupService securityGroupService = Mock()
-    mockClient.compute() >> compute
-    compute.securityGroups() >> securityGroupService
-
-    def id = UUID.randomUUID().toString()
-    def name = "sec-group-2"
-    def description = "A description 2"
-
-    def existingRules = [
-      new NovaSecGroupExtension.SecurityGroupRule(id: '1', fromPort: 80, toPort: 8080, cidr: "192.1.68.1/24"),
-      new NovaSecGroupExtension.SecurityGroupRule(id: '2', fromPort: 443, toPort: 443, cidr: "0.0.0.0/0")
-    ]
-    def existingSecurityGroup = new NovaSecGroupExtension(id: id, name: "name", description: "desc", rules: existingRules)
-
-    def newRules = [
-      new UpsertOpenstackSecurityGroupDescription.Rule(fromPort: 80, toPort: 80, cidr: "0.0.0.0/0"),
-      new UpsertOpenstackSecurityGroupDescription.Rule(fromPort: 443, toPort: 443, cidr: "0.0.0.0/0")
-    ]
-
-    when:
-    provider.upsertSecurityGroup(id, name, description, newRules)
-
-    then:
-    1 * securityGroupService.get(id) >> existingSecurityGroup
-    1 * securityGroupService.update(id, name, description) >> existingSecurityGroup
-    existingRules.each { rule ->
-      1 * securityGroupService.deleteRule(rule.id)
-    }
-    newRules.each { rule ->
-      1 * securityGroupService.createRule({ SecGroupExtension.Rule r ->
-        r.toPort == rule.toPort && r.fromPort == rule.fromPort && r.IPProtocol == IPProtocol.TCP
-      })
-    }
-    noExceptionThrown()
-  }
-
-  def "upsert security group handles exceptions"() {
-    setup:
-    ComputeService compute = Mock()
-    ComputeSecurityGroupService securityGroupService = Mock()
-    mockClient.compute() >> compute
-    compute.securityGroups() >> securityGroupService
-
-    def name = "name"
-    def description = "desc"
-
-    when:
-    provider.upsertSecurityGroup(null, name, description, [])
-
-    then:
-    1 * securityGroupService.create(name, description) >> { throw new RuntimeException("foo") }
-    OpenstackOperationException ex = thrown(OpenstackOperationException)
-    ex.message.contains("foo")
-    ex.message.contains(AtomicOperations.UPSERT_SECURITY_GROUP)
-  }
-
-  def "delete security group"() {
-    setup:
-    ComputeService compute = Mock()
-    ComputeSecurityGroupService securityGroupService = Mock()
-    mockClient.compute() >> compute
-    compute.securityGroups() >> securityGroupService
-    def id = UUID.randomUUID().toString()
-    def success = ActionResponse.actionSuccess()
-
-    when:
-    provider.deleteSecurityGroup(region, id)
-
-    then:
-    1 * securityGroupService.delete(id) >> success
-  }
-
-  def "delete security group handles failure"() {
-    setup:
-    ComputeService compute = Mock()
-    ComputeSecurityGroupService securityGroupService = Mock()
-    mockClient.compute() >> compute
-    compute.securityGroups() >> securityGroupService
-    def id = UUID.randomUUID().toString()
-    def failure = ActionResponse.actionFailed("foo", 500)
-
-    when:
-    provider.deleteSecurityGroup(region, id)
-
-    then:
-    1 * securityGroupService.delete(id) >> failure
-    OpenstackOperationException ex = thrown(OpenstackOperationException)
-    ex.message.contains("foo")
-    ex.message.contains("500")
-    ex.message.contains(AtomicOperations.DELETE_SECURITY_GROUP)
-
-  }
-
   def "handle request succeeds"() {
     setup:
     def success = ActionResponse.actionSuccess()
@@ -288,6 +143,248 @@ class OpenstackClientProviderSpec extends Specification {
     then:
     1 * stackApi.create("mystack", "{}", [:], false, 1)
     noExceptionThrown()
+  }
+
+  def "create security group rule"() {
+    setup:
+    ComputeService compute = Mock()
+    ComputeSecurityGroupService securityGroupService = Mock()
+    mockClient.compute() >> compute
+    compute.securityGroups() >> securityGroupService
+
+    def id = UUID.randomUUID().toString()
+    def protocol = IPProtocol.TCP
+    def cidr = "0.0.0.0/0"
+    def fromPort = 80
+    def toPort = 8080
+
+    when:
+    provider.createSecurityGroupRule(region, id, protocol, cidr, fromPort, toPort)
+
+    then:
+    1 * securityGroupService.createRule({r ->
+      r.parentGroupId == id && r.ipProtocol == protocol && r.cidr == cidr && r.fromPort == fromPort && r.toPort == toPort
+    })
+  }
+
+  def "create security group rule throws exception"() {
+    setup:
+    ComputeService compute = Mock()
+    ComputeSecurityGroupService securityGroupService = Mock()
+    mockClient.compute() >> compute
+    compute.securityGroups() >> securityGroupService
+
+    def id = UUID.randomUUID().toString()
+    def protocol = IPProtocol.TCP
+    def cidr = "0.0.0.0/0"
+    def fromPort = 80
+    def toPort = 8080
+
+    when:
+    provider.createSecurityGroupRule(region, id, protocol, cidr, fromPort, toPort)
+
+    then:
+    1 * securityGroupService.createRule(_) >> { throw new RuntimeException("foo") }
+    OpenstackOperationException ex = thrown(OpenstackOperationException)
+    ex.message.contains("foo")
+  }
+
+  def "delete security group rule"() {
+    setup:
+    ComputeService compute = Mock()
+    ComputeSecurityGroupService securityGroupService = Mock()
+    mockClient.compute() >> compute
+    compute.securityGroups() >> securityGroupService
+
+    def id = UUID.randomUUID().toString()
+
+    when:
+    provider.deleteSecurityGroupRule(region, id)
+
+    then:
+    1 * securityGroupService.deleteRule(id)
+  }
+
+  def "delete security group rule throws exception"() {
+    setup:
+    ComputeService compute = Mock()
+    ComputeSecurityGroupService securityGroupService = Mock()
+    mockClient.compute() >> compute
+    compute.securityGroups() >> securityGroupService
+
+    def id = UUID.randomUUID().toString()
+
+    when:
+    provider.deleteSecurityGroupRule(region, id)
+
+    then:
+    1 * securityGroupService.deleteRule(id) >> { throw new RuntimeException("foo")}
+    OpenstackOperationException ex = thrown(OpenstackOperationException)
+    ex.message.contains("foo")
+  }
+
+  def "delete security group"() {
+    setup:
+    ComputeService compute = Mock()
+    ComputeSecurityGroupService securityGroupService = Mock()
+    mockClient.compute() >> compute
+    compute.securityGroups() >> securityGroupService
+    def id = UUID.randomUUID().toString()
+    def success = ActionResponse.actionSuccess()
+
+    when:
+    provider.deleteSecurityGroup(region, id)
+
+    then:
+    1 * securityGroupService.delete(id) >> success
+  }
+
+  def "delete security group handles failure"() {
+    setup:
+    ComputeService compute = Mock()
+    ComputeSecurityGroupService securityGroupService = Mock()
+    mockClient.compute() >> compute
+    compute.securityGroups() >> securityGroupService
+    def id = UUID.randomUUID().toString()
+    def failure = ActionResponse.actionFailed("foo", 500)
+
+    when:
+    provider.deleteSecurityGroup(region, id)
+
+    then:
+    1 * securityGroupService.delete(id) >> failure
+    OpenstackOperationException ex = thrown(OpenstackOperationException)
+    ex.message.contains("foo")
+    ex.message.contains("500")
+    ex.message.contains(AtomicOperations.DELETE_SECURITY_GROUP)
+
+  }
+
+  def "create security group"() {
+    setup:
+    ComputeService compute = Mock()
+    ComputeSecurityGroupService securityGroupService = Mock()
+    mockClient.compute() >> compute
+    compute.securityGroups() >> securityGroupService
+
+    def name = "security-group"
+    def description = "description 1"
+
+    when:
+    provider.createSecurityGroup(region, name, description)
+
+    then:
+    1 * securityGroupService.create(name, description)
+  }
+
+  def "create security group throws exception"() {
+    setup:
+    ComputeService compute = Mock()
+    ComputeSecurityGroupService securityGroupService = Mock()
+    mockClient.compute() >> compute
+    compute.securityGroups() >> securityGroupService
+
+    def name = "security-group"
+    def description = "description 1"
+
+    when:
+    provider.createSecurityGroup(region, name, description)
+
+    then:
+    1 * securityGroupService.create(name, description) >> { throw new RuntimeException("foo")}
+    OpenstackOperationException ex = thrown(OpenstackOperationException)
+    ex.message.contains("foo")
+  }
+
+  def "update security group"() {
+    setup:
+    ComputeService compute = Mock()
+    ComputeSecurityGroupService securityGroupService = Mock()
+    mockClient.compute() >> compute
+    compute.securityGroups() >> securityGroupService
+
+    def id = UUID.randomUUID().toString()
+    def name = "security-group"
+    def description = "description 1"
+
+    when:
+    provider.updateSecurityGroup(region, id, name, description)
+
+    then:
+    1 * securityGroupService.update(id, name, description)
+  }
+
+  def "update security group throws exception"() {
+    setup:
+    ComputeService compute = Mock()
+    ComputeSecurityGroupService securityGroupService = Mock()
+    mockClient.compute() >> compute
+    compute.securityGroups() >> securityGroupService
+
+    def id = UUID.randomUUID().toString()
+    def name = "security-group"
+    def description = "description 1"
+
+    when:
+    provider.updateSecurityGroup(region, id, name, description)
+
+    then:
+    1 * securityGroupService.update(id, name, description) >> { throw new RuntimeException("foo")}
+    OpenstackOperationException ex = thrown(OpenstackOperationException)
+    ex.message.contains("foo")
+  }
+
+  def "get security group"() {
+    setup:
+    ComputeService compute = Mock()
+    ComputeSecurityGroupService securityGroupService = Mock()
+    mockClient.compute() >> compute
+    compute.securityGroups() >> securityGroupService
+
+    def id = UUID.randomUUID().toString()
+    SecGroupExtension securityGroup = new NovaSecGroupExtension()
+
+    when:
+    def actual = provider.getSecurityGroup(region, id)
+
+    then:
+    actual == securityGroup
+    1 * securityGroupService.get(id) >> securityGroup
+  }
+
+  def "get security group throws exception when not found"() {
+    setup:
+    ComputeService compute = Mock()
+    ComputeSecurityGroupService securityGroupService = Mock()
+    mockClient.compute() >> compute
+    compute.securityGroups() >> securityGroupService
+
+    def id = UUID.randomUUID().toString()
+
+    when:
+    def actual = provider.getSecurityGroup(region, id)
+
+    then:
+    1 * securityGroupService.get(id)
+    thrown(OpenstackOperationException)
+  }
+
+  def "get security group throws exception"() {
+    setup:
+    ComputeService compute = Mock()
+    ComputeSecurityGroupService securityGroupService = Mock()
+    mockClient.compute() >> compute
+    compute.securityGroups() >> securityGroupService
+
+    def id = UUID.randomUUID().toString()
+
+    when:
+    provider.getSecurityGroup(region, id)
+
+    then:
+    1 * securityGroupService.get(id) >> { throw new RuntimeException("foo")}
+    OpenstackOperationException ex = thrown(OpenstackOperationException)
+    ex.message.contains("foo")
   }
 
   def "test get internal load balancer port succeeds"() {
