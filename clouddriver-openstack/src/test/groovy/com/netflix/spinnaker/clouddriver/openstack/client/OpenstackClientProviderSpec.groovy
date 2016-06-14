@@ -17,9 +17,7 @@
 package com.netflix.spinnaker.clouddriver.openstack.client
 
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.securitygroup.UpsertOpenstackSecurityGroupDescription
-import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackOperationException
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackProviderException
-import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperations
 import org.openstack4j.api.OSClient
 import org.openstack4j.api.compute.ComputeSecurityGroupService
 import org.openstack4j.api.compute.ComputeService
@@ -28,9 +26,12 @@ import org.openstack4j.api.heat.HeatService
 import org.openstack4j.api.heat.StackService
 import org.openstack4j.api.heat.TemplateService
 import org.openstack4j.api.networking.NetworkingService
-import org.openstack4j.api.networking.ext.*
+import org.openstack4j.api.networking.ext.HealthMonitorService
+import org.openstack4j.api.networking.ext.LbPoolService
+import org.openstack4j.api.networking.ext.LoadBalancerService
+import org.openstack4j.api.networking.ext.MemberService
+import org.openstack4j.api.networking.ext.VipService
 import org.openstack4j.model.common.ActionResponse
-import org.openstack4j.model.compute.*
 import org.openstack4j.model.compute.Address
 import org.openstack4j.model.compute.Addresses
 import org.openstack4j.model.compute.IPProtocol
@@ -210,11 +211,9 @@ class OpenstackClientProviderSpec extends Specification {
 
     then:
     1 * securityGroupService.delete(id) >> failure
-    OpenstackOperationException ex = thrown(OpenstackOperationException)
+    Exception ex = thrown(OpenstackProviderException)
     ex.message.contains("foo")
     ex.message.contains("500")
-    ex.message.contains(AtomicOperations.DELETE_SECURITY_GROUP)
-
   }
 
   def "handle request succeeds"() {

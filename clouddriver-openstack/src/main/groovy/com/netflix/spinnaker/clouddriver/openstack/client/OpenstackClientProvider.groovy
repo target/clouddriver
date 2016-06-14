@@ -362,7 +362,7 @@ abstract class OpenstackClientProvider {
    * @param securityGroupId id of the security group
    */
   void deleteSecurityGroup(String region, String securityGroupId) {
-    handleRequest(AtomicOperations.DELETE_SECURITY_GROUP) {
+    handleRequest {
       client.useRegion(region).compute().securityGroups().delete(securityGroupId)
     }
   }
