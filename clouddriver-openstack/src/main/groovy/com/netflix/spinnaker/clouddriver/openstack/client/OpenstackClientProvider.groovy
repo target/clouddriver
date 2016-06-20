@@ -521,7 +521,7 @@ abstract class OpenstackClientProvider {
       client.useRegion(region).heat().stacks().getStackByName(stackName)
     }
     if (!stack) {
-      throw new OpenstackResourceNotFoundException("Unable to find stack $stackName in region $region")
+      throw new OpenstackProviderException("Unable to find stack $stackName in region $region")
     }
     stack
   }

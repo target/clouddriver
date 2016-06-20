@@ -47,15 +47,19 @@ class CloneOpenstackAtomicOperation implements AtomicOperation<DeploymentResult>
   */
   @Override
   DeploymentResult operate (List priorOutputs) {
-    DeployOpenstackAtomicOperationDescription newDescription = cloneAndOverrideDescription()
+    DeploymentResult deploymentResult
+    try {
+      DeployOpenstackAtomicOperationDescription newDescription = cloneAndOverrideDescription()
 
-    task.updateStatus BASE_PHASE, "Initializing cloning of server group ${description.source.serverGroup}"
+      task.updateStatus BASE_PHASE, "Initializing cloning of server group ${description.source.serverGroup}"
 
-    DeployOpenstackAtomicOperation deployer = new DeployOpenstackAtomicOperation(newDescription)
-    DeploymentResult deploymentResult = deployer.operate(priorOutputs) // right now this is null from deployOpenstackAtomicOperation
+      DeployOpenstackAtomicOperation deployer = new DeployOpenstackAtomicOperation(newDescription)
+      deploymentResult = deployer.operate(priorOutputs) // right now this is null from deployOpenstackAtomicOperation
 
-    task.updateStatus BASE_PHASE, "Finished cloning server group ${description.source.serverGroup}"
-
+      task.updateStatus BASE_PHASE, "Finished cloning server group ${description.source.serverGroup}"
+    } catch (Exception e) {
+      throw new OpenstackOperationException(AtomicOperations.CLONE_SERVER_GROUP, e)
+    }
     deploymentResult
   }
 

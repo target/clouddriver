@@ -22,7 +22,9 @@ import com.netflix.spinnaker.clouddriver.deploy.DeploymentResult
 import com.netflix.spinnaker.clouddriver.openstack.client.OpenstackClientProvider
 import com.netflix.spinnaker.clouddriver.openstack.deploy.OpenstackServerGroupNameResolver
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergroup.DeployOpenstackAtomicOperationDescription
+import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackOperationException
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperation
+import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperations
 import org.apache.commons.io.IOUtils
 import org.openstack4j.model.network.ext.LbPool
 
@@ -44,40 +46,46 @@ class DeployOpenstackAtomicOperation implements AtomicOperation<DeploymentResult
   */
   @Override
   DeploymentResult operate(List priorOutputs) {
-    task.updateStatus BASE_PHASE, "Initializing creation of server group"
-    OpenstackClientProvider provider = description.credentials.provider
-
-    def serverGroupNameResolver = new OpenstackServerGroupNameResolver(description.credentials, description.region)
-    def groupName = serverGroupNameResolver.combineAppStackDetail(description.application, description.stack, description.freeFormDetails)
-
-    task.updateStatus BASE_PHASE, "Looking up next sequence index for cluster ${groupName}..."
-    def stackName = serverGroupNameResolver.resolveNextServerGroupName(description.application, description.stack, description.freeFormDetails, false)
-    task.updateStatus BASE_PHASE, "Heat stack name chosen to be ${stackName}."
-
-    task.updateStatus BASE_PHASE, "Loading templates"
-    String templateFile = 'asg.yaml'
-    String template = IOUtils.toString(this.class.classLoader.getResourceAsStream(templateFile))
-    String subtemplateFile = 'asg_resource.yaml'
-    String subtemplate = IOUtils.toString(this.class.classLoader.getResourceAsStream(subtemplateFile))
-    task.updateStatus BASE_PHASE, "Finished loading templates"
-
-    task.updateStatus BASE_PHASE, "Getting load balancer details for pool id $description.serverGroupParameters.poolId"
-    LbPool pool = provider.getLoadBalancerPool(description.region, description.serverGroupParameters.poolId)
-    task.updateStatus BASE_PHASE, "Found load balancer details for pool id $description.serverGroupParameters.poolId with name $pool.name"
-
-    task.updateStatus BASE_PHASE, "Getting internal port used for load balancer $pool.name"
-    int port = provider.getInternalLoadBalancerPort(pool)
-    task.updateStatus BASE_PHASE, "Found internal port $port used for load balancer $pool.name"
-
-    task.updateStatus BASE_PHASE, "Creating heat stack $stackName"
-    provider.deploy(description.region, stackName, template, [(subtemplateFile):subtemplate], description.serverGroupParameters.identity { internalPort = port ; it }, description.disableRollback, description.timeoutMins)
-    task.updateStatus BASE_PHASE, "Finished creating heat stack $stackName"
-
-    task.updateStatus BASE_PHASE, "Successfully created server group."
-
     DeploymentResult deploymentResult = new DeploymentResult()
-    deploymentResult.deployedNames = Arrays.asList(stackName)
-    deploymentResult.deployedNamesByLocation = [(description.region):deploymentResult.deployedNames]
+    try {
+      task.updateStatus BASE_PHASE, "Initializing creation of server group"
+      OpenstackClientProvider provider = description.credentials.provider
+
+      def serverGroupNameResolver = new OpenstackServerGroupNameResolver(description.credentials, description.region)
+      def groupName = serverGroupNameResolver.combineAppStackDetail(description.application, description.stack, description.freeFormDetails)
+
+      task.updateStatus BASE_PHASE, "Looking up next sequence index for cluster ${groupName}..."
+      def stackName = serverGroupNameResolver.resolveNextServerGroupName(description.application, description.stack, description.freeFormDetails, false)
+      task.updateStatus BASE_PHASE, "Heat stack name chosen to be ${stackName}."
+
+      task.updateStatus BASE_PHASE, "Loading templates"
+      String templateFile = 'asg.yaml'
+      String template = IOUtils.toString(this.class.classLoader.getResourceAsStream(templateFile))
+      String subtemplateFile = 'asg_resource.yaml'
+      String subtemplate = IOUtils.toString(this.class.classLoader.getResourceAsStream(subtemplateFile))
+      task.updateStatus BASE_PHASE, "Finished loading templates"
+
+      task.updateStatus BASE_PHASE, "Getting load balancer details for pool id $description.serverGroupParameters.poolId"
+      LbPool pool = provider.getLoadBalancerPool(description.region, description.serverGroupParameters.poolId)
+      task.updateStatus BASE_PHASE, "Found load balancer details for pool id $description.serverGroupParameters.poolId with name $pool.name"
+
+      task.updateStatus BASE_PHASE, "Getting internal port used for load balancer $pool.name"
+      int port = provider.getInternalLoadBalancerPort(pool)
+      task.updateStatus BASE_PHASE, "Found internal port $port used for load balancer $pool.name"
+
+      task.updateStatus BASE_PHASE, "Creating heat stack $stackName"
+      provider.deploy(description.region, stackName, template, [(subtemplateFile): subtemplate], description.serverGroupParameters.identity {
+        internalPort = port; it
+      }, description.disableRollback, description.timeoutMins)
+      task.updateStatus BASE_PHASE, "Finished creating heat stack $stackName"
+
+      task.updateStatus BASE_PHASE, "Successfully created server group."
+
+      deploymentResult.deployedNames = Arrays.asList(stackName)
+      deploymentResult.deployedNamesByLocation = [(description.region): deploymentResult.deployedNames]
+    } catch (Exception e) {
+      throw new OpenstackOperationException(AtomicOperations.CREATE_SERVER_GROUP, e)
+    }
     deploymentResult
 
   }

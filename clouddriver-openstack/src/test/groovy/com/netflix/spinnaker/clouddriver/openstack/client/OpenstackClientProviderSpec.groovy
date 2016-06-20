@@ -2043,7 +2043,7 @@ class OpenstackClientProviderSpec extends Specification {
 
     then:
     1 * stackApi.getStackByName(name) >> null
-    def ex = thrown(OpenstackResourceNotFoundException)
+    def ex = thrown(OpenstackProviderException)
     ex.message.contains(name)
   }
 

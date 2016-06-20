@@ -23,9 +23,13 @@ import com.netflix.spinnaker.clouddriver.openstack.client.OpenstackClientProvide
 import com.netflix.spinnaker.clouddriver.openstack.client.OpenstackProviderFactory
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergroup.CloneOpenstackAtomicOperationDescription
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergroup.DeployOpenstackAtomicOperationDescription
+import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackOperationException
+import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackProviderException
+import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackResourceNotFoundException
 import com.netflix.spinnaker.clouddriver.openstack.domain.ServerGroupParameters
 import com.netflix.spinnaker.clouddriver.openstack.security.OpenstackCredentials
 import com.netflix.spinnaker.clouddriver.openstack.security.OpenstackNamedAccountCredentials
+import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperations
 import org.openstack4j.model.heat.Stack
 import spock.lang.Specification
 import spock.lang.Subject
@@ -213,4 +217,28 @@ class CloneOpenstackAtomicOperationSpec extends Specification {
     resultDescription.account == newDeployAtomicOperationDescription.account
     resultDescription.region == newDeployAtomicOperationDescription.region
   }
+
+  def "ancestor stack not found throws operation exception"() {
+    given:
+    def stackName = 'app-stack-details-v000'
+    def notFound = new OpenstackProviderException("foo")
+    def inputDescription = new CloneOpenstackAtomicOperationDescription(
+      source: new CloneOpenstackAtomicOperationDescription.OpenstackCloneSource(serverGroup: stackName, region: REGION),
+      region: REGION,
+      account: ACCOUNT_NAME,
+      credentials: credentials
+    )
+
+    @Subject def operation = new CloneOpenstackAtomicOperation(inputDescription)
+
+    when:
+    operation.operate([])
+
+    then:
+    1 * provider.getStack(REGION, stackName) >> { throw notFound }
+    def ex = thrown(OpenstackOperationException)
+    ex.message.contains(AtomicOperations.CLONE_SERVER_GROUP)
+    ex.cause == notFound
+  }
+
 }
