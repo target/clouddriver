@@ -28,6 +28,12 @@ class OpenstackClientV2Provider extends OpenstackClientProvider {
   Access access
   List<String> regions
 
+  /**
+   * Default constructor .. Requires regions are configured externally
+   * as v2 openstack API doesn't support looking up regions.
+   * @param client
+   * @param regions - List of region ids
+     */
   OpenstackClientV2Provider(OSClient.OSClientV2 client, List<String> regions) {
     this.access = client.access
     this.regions = regions
