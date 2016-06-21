@@ -70,14 +70,14 @@ class OpenstackInstanceCachingAgent implements CachingAgent, AccountAware {
     List<Server> servers = this.account.credentials.provider.getInstances(region)
 
     servers?.each { Server server ->
-      String name = server.name
-      String key = Keys.getInstanceKey(name, accountName, region)
+      String id = server.id
+      String key = Keys.getInstanceKey(id, accountName, region)
       cachedInstances[key].with {
-        attributes.name = name
+        attributes.name = server.name
         attributes.region = region
         attributes.metadata = server.metadata
         attributes.zone = server.availabilityZone
-        attributes.instanceId = server.id
+        attributes.instanceId = id
         attributes.launchedTime = server.launchedAt?.time ?: -1
         attributes.status = server.status
         attributes.keyName = server.keyName

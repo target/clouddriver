@@ -26,11 +26,9 @@ import org.openstack4j.openstack.OSFactory
 class OpenstackClientV3Provider extends OpenstackClientProvider {
 
   Token token
-  List<String> regions
 
-  OpenstackClientV3Provider(OSClient.OSClientV3 client, List<String> regions) {
+  OpenstackClientV3Provider(OSClient.OSClientV3 client) {
     this.token = client.token
-    this.regions = regions
   }
 
   @Override
@@ -52,11 +50,7 @@ class OpenstackClientV3Provider extends OpenstackClientProvider {
   @Override
   List<String> getAllRegions() {
     handleRequest {
-      List<String> result = this.regions
-      if (!result) {
-        result = client.identity().regions().list()?.collect { it.id }
-      }
-      result
+      client.identity().regions().list()?.collect { it.id }
     }
   }
 }

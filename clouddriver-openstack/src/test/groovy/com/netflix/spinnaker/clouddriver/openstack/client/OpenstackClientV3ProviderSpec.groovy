@@ -31,12 +31,10 @@ import spock.lang.Unroll
 class OpenstackClientV3ProviderSpec extends Specification {
   OpenstackClientV3Provider provider
   OSClient.OSClientV3 mockClient
-  List<String> regions
 
   def "setup"() {
     mockClient = Mock(OSClient.OSClientV3)
-    regions = ['east', 'west']
-    provider = new OpenstackClientV3Provider(mockClient, regions) {
+    provider = new OpenstackClientV3Provider(mockClient) {
       @Override
       OSClient getClient() {
         mockClient
@@ -48,17 +46,8 @@ class OpenstackClientV3ProviderSpec extends Specification {
     }
   }
 
-  def "test get regions configured"() {
-    when:
-    List<String> result = provider.getAllRegions()
-
-    then:
-    result == regions
-  }
-
   def "test get regions lookup"() {
     given:
-    provider.regions = null
     IdentityService identityService = Mock()
     RegionService regionService = Mock()
     Region region = Mock()
@@ -79,7 +68,6 @@ class OpenstackClientV3ProviderSpec extends Specification {
 
   def "test get regions lookup exception"() {
     given:
-    provider.regions = null
     IdentityService identityService = Mock()
     RegionService regionService = Mock()
     Throwable throwable = new ServerResponseException('foo', HttpStatus.INTERNAL_SERVER_ERROR.value())

@@ -46,7 +46,7 @@ class OpenstackProviderFactory {
         .credentials(credentials.username, credentials.password, Identifier.byName(credentials.domainName))
         .scopeToProject(Identifier.byName(credentials.tenantName), Identifier.byName(credentials.domainName))
         .authenticate()
-      provider = new OpenstackClientV3Provider(osClient, credentials.regions)
+      provider = new OpenstackClientV3Provider(osClient)
     } else {
       throw new IllegalArgumentException("Unknown account type ${credentials.accountType}")
     }

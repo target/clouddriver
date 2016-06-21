@@ -30,6 +30,7 @@ class Keys {
     private Namespace() {
       def parts = name().split('_')
 
+      // Converts CONSTANT naming convention to camel case
       ns = parts.tail().inject(new StringBuilder(parts.head().toLowerCase())) { val, next -> val.append(next.charAt(0)).append(next.substring(1).toLowerCase()) }
     }
 
@@ -65,6 +66,6 @@ class Keys {
   }
 
   static String getInstanceKey(String instanceId, String account, String region) {
-    "${OpenstackCloudProvider.ID}:${Namespace.INSTANCES.ns}:${account}:${region}:${instanceId}"
+    "${OpenstackCloudProvider.ID}:${Namespace.INSTANCES}:${account}:${region}:${instanceId}"
   }
 }

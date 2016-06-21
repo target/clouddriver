@@ -51,6 +51,7 @@ class OpenstackInstance implements Instance, Serializable {
      ]]
   }
 
+  //TODO - Further define health states ... There are 18 OP and 7 spinnaker states.
   @Override
   HealthState getHealthState() {
     switch (Status.forValue(status)) {
