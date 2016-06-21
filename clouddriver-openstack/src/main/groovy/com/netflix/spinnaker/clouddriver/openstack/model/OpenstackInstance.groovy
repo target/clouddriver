@@ -47,7 +47,7 @@ class OpenstackInstance implements Instance, Serializable {
        state      : healthState.toString(),
        zone       : zone,
        type       : 'serverGroup',
-       description: 'Is this Openstack server group running?'
+       description: ''
      ]]
   }
 
