@@ -29,7 +29,11 @@ import org.apache.commons.io.IOUtils
 import org.openstack4j.model.network.ext.LbPool
 
 class DeployOpenstackAtomicOperation implements AtomicOperation<DeploymentResult> {
+
   private final String BASE_PHASE = "DEPLOY"
+  private final String TEMPLATE_FILE = 'asg.yaml'
+  private final String SUBTEMPLATE_FILE = 'asg_resource.yaml'
+
   DeployOpenstackAtomicOperationDescription description;
 
   DeployOpenstackAtomicOperation(DeployOpenstackAtomicOperationDescription description) {
@@ -59,10 +63,8 @@ class DeployOpenstackAtomicOperation implements AtomicOperation<DeploymentResult
       task.updateStatus BASE_PHASE, "Heat stack name chosen to be ${stackName}."
 
       task.updateStatus BASE_PHASE, "Loading templates"
-      String templateFile = 'asg.yaml'
-      String template = IOUtils.toString(this.class.classLoader.getResourceAsStream(templateFile))
-      String subtemplateFile = 'asg_resource.yaml'
-      String subtemplate = IOUtils.toString(this.class.classLoader.getResourceAsStream(subtemplateFile))
+      String template = IOUtils.toString(this.class.classLoader.getResourceAsStream(TEMPLATE_FILE))
+      String subtemplate = IOUtils.toString(this.class.classLoader.getResourceAsStream(SUBTEMPLATE_FILE))
       task.updateStatus BASE_PHASE, "Finished loading templates"
 
       task.updateStatus BASE_PHASE, "Getting load balancer details for pool id $description.serverGroupParameters.poolId"
@@ -74,7 +76,7 @@ class DeployOpenstackAtomicOperation implements AtomicOperation<DeploymentResult
       task.updateStatus BASE_PHASE, "Found internal port $port used for load balancer $pool.name"
 
       task.updateStatus BASE_PHASE, "Creating heat stack $stackName"
-      provider.deploy(description.region, stackName, template, [(subtemplateFile): subtemplate], description.serverGroupParameters.identity {
+      provider.deploy(description.region, stackName, template, [(SUBTEMPLATE_FILE): subtemplate], description.serverGroupParameters.identity {
         internalPort = port; it
       }, description.disableRollback, description.timeoutMins)
       task.updateStatus BASE_PHASE, "Finished creating heat stack $stackName"

@@ -10,6 +10,9 @@ parameters:
   internal_port:
     type: string
     description: internal port on which each server will listen
+  metadata:
+    type: json
+    description: server instance metadata
   network_id:
     type: string
     description: Network used by each server
@@ -31,6 +34,7 @@ resources:
     properties:
       flavor: {get_param: flavor}
       image: {get_param: image}
+      metadata: {get_param: metadata}
       networks:
         - port: {get_resource: port}
   member:

@@ -38,7 +38,9 @@ class DeployOpenstackAtomicOperationValidator extends DescriptionValidator<Deplo
   void validate(List priorDescriptions, DeployOpenstackAtomicOperationDescription description, Errors errors) {
     def validator = new OpenstackAttributeValidator("deployOpenstackAtomicOperationDescription", errors)
 
-    validator.validateCredentials(description.account, accountCredentialsProvider)
+    if (!validator.validateCredentials(description.account, accountCredentialsProvider)) {
+      return
+    }
     validator.validateApplication(description.application, "application")
     validator.validateStack(description.stack, "stack")
     validator.validateNotEmpty(description.region, "region")
@@ -52,7 +54,9 @@ class DeployOpenstackAtomicOperationValidator extends DescriptionValidator<Deplo
     parameters.with {
       validator.validateNotEmpty(instanceType, "${prefix}.instanceType")
       validator.validateNotEmpty(image, "${prefix}.image")
+      validator.validateNotNull(maxSize, "${prefix}.maxSize")
       validator.validatePositive(maxSize, "${prefix}.maxSize")
+      validator.validateNotNull(minSize, "${prefix}.maxSize")
       validator.validatePositive(minSize, "${prefix}.minSize")
       validator.validateGreaterThan(maxSize, minSize, "${prefix}.maxSize")
       validator.validateNotEmpty(networkId, "${prefix}.networkId")

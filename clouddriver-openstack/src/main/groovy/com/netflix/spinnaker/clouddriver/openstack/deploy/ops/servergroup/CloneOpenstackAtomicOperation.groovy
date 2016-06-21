@@ -42,7 +42,7 @@ class CloneOpenstackAtomicOperation implements AtomicOperation<DeploymentResult>
   }
 
   /*
-  * curl -X POST -H "Content-Type: application/json" -d '[{"cloneServerGroup": "source": {"serverGroup": "myapp-teststack-v000", "region": "RegionOne"}, "region": "RegionTwo", "account": "test"}}]' localhost:7002/openstack/ops
+  * curl -X POST -H "Content-Type: application/json" -d '[{"cloneServerGroup": {"source": {"serverGroup": "myapp-teststack-v000", "region": "RegionOne"}, "region": "RegionTwo", "account": "test"}}]' localhost:7002/openstack/ops
   * curl -X GET -H "Accept: application/json" localhost:7002/task/1
   */
   @Override
@@ -98,6 +98,6 @@ class CloneOpenstackAtomicOperation implements AtomicOperation<DeploymentResult>
 
     task.updateStatus BASE_PHASE, "Finished reating new server group description"
 
-    return deployDescription
+    deployDescription
   }
 }

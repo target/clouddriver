@@ -23,10 +23,8 @@ import com.netflix.spinnaker.clouddriver.openstack.security.OpenstackNamedAccoun
 import com.netflix.spinnaker.clouddriver.security.AccountCredentialsProvider
 import org.springframework.validation.Errors
 import spock.lang.Specification
+import spock.lang.Unroll
 
-/**
- *
- */
 class DeployOpenstackAtomicOperationValidatorSpec extends Specification {
 
   Errors errors
@@ -74,64 +72,45 @@ class DeployOpenstackAtomicOperationValidatorSpec extends Specification {
     0 * errors.rejectValue(_,_)
   }
 
-  def "Validate application - error"() {
+
+  @Unroll
+  def "Validate create missing required core field - #attribute"() {
     given:
     ServerGroupParameters params = new ServerGroupParameters(instanceType: instanceType, image:image, maxSize: maxSize, minSize: minSize, networkId: networkId, poolId: poolId, securityGroups: securityGroups)
-    DeployOpenstackAtomicOperationDescription description = new DeployOpenstackAtomicOperationDescription(account: account, application: 'asd=adfda=adfdaf', region: region, stack: stack, freeFormDetails: freeFormDetails, disableRollback: disableRollback, timeoutMins: timeoutMins, serverGroupParameters: params)
-
-    when:
-    validator.validate([], description, errors)
-
-    then:
-    1 * errors.rejectValue(_,_)
-  }
-
-  def "Validate stack - error"() {
-    given:
-    ServerGroupParameters params = new ServerGroupParameters(instanceType: instanceType, image:image, maxSize: maxSize, minSize: minSize, networkId: networkId, poolId: poolId, securityGroups: securityGroups)
-    DeployOpenstackAtomicOperationDescription description = new DeployOpenstackAtomicOperationDescription(account: account, application: application, region: region, stack: '1232=1q434=134134', freeFormDetails: freeFormDetails, disableRollback: disableRollback, timeoutMins: timeoutMins, serverGroupParameters: params)
-
-    when:
-    validator.validate([], description, errors)
-
-    then:
-    1 * errors.rejectValue(_,_)
-  }
-
-  def "Validate timeout - error"() {
-    given:
-    ServerGroupParameters params = new ServerGroupParameters(instanceType: instanceType, image:image, maxSize: maxSize, minSize: minSize, networkId: networkId, poolId: poolId, securityGroups: securityGroups)
-    DeployOpenstackAtomicOperationDescription description = new DeployOpenstackAtomicOperationDescription(account: account, application: application, region: region, stack: stack, freeFormDetails: freeFormDetails, disableRollback: disableRollback, timeoutMins: -1, serverGroupParameters: params)
-
-    when:
-    validator.validate([], description, errors)
-
-    then:
-    1 * errors.rejectValue(_,_)
-  }
-
-  def "Validate instanceType - error"() {
-    given:
-    ServerGroupParameters params = new ServerGroupParameters(instanceType: '', image:image, maxSize: maxSize, minSize: minSize, networkId: networkId, poolId: poolId, securityGroups: securityGroups)
     DeployOpenstackAtomicOperationDescription description = new DeployOpenstackAtomicOperationDescription(account: account, application: application, region: region, stack: stack, freeFormDetails: freeFormDetails, disableRollback: disableRollback, timeoutMins: timeoutMins, serverGroupParameters: params)
+    if (attribute != 'stack') {
+      description."$attribute" = ''
+    } else {
+      description."$attribute" = '1-2-3'
+    }
 
     when:
     validator.validate([], description, errors)
 
     then:
-    1 * errors.rejectValue(_,_)
+    times * errors.rejectValue(_,_)
+
+    where:
+    attribute << ['application', 'stack']
+    times << [2,1]
   }
 
-  def "Validate image - error"() {
+  @Unroll
+  def "Validate create missing required template field - #attribute"() {
     given:
-    ServerGroupParameters params = new ServerGroupParameters(instanceType: instanceType, image:'', maxSize: maxSize, minSize: minSize, networkId: networkId, poolId: poolId, securityGroups: securityGroups)
+    ServerGroupParameters params = new ServerGroupParameters(instanceType: instanceType, image:image, maxSize: maxSize, minSize: minSize, networkId: networkId, poolId: poolId, securityGroups: securityGroups)
     DeployOpenstackAtomicOperationDescription description = new DeployOpenstackAtomicOperationDescription(account: account, application: application, region: region, stack: stack, freeFormDetails: freeFormDetails, disableRollback: disableRollback, timeoutMins: timeoutMins, serverGroupParameters: params)
+    description.serverGroupParameters."$attribute" = null
 
     when:
     validator.validate([], description, errors)
 
     then:
-    1 * errors.rejectValue(_,_)
+    times * errors.rejectValue(_,_)
+
+    where:
+    attribute << ['instanceType', 'image', 'maxSize', 'minSize', 'networkId', 'poolId', 'securityGroups']
+    times << [1,1,3,3,1,1,1]
   }
 
   def "Validate sizing - error"() {
@@ -144,42 +123,6 @@ class DeployOpenstackAtomicOperationValidatorSpec extends Specification {
 
     then:
     3 * errors.rejectValue(_,_)
-  }
-
-  def "Validate network - error"() {
-    given:
-    ServerGroupParameters params = new ServerGroupParameters(instanceType: instanceType, image:image, maxSize: maxSize, minSize: minSize, networkId: '', poolId: poolId, securityGroups: securityGroups)
-    DeployOpenstackAtomicOperationDescription description = new DeployOpenstackAtomicOperationDescription(account: account, application: application, region: region, stack: stack, freeFormDetails: freeFormDetails, disableRollback: disableRollback, timeoutMins: timeoutMins, serverGroupParameters: params)
-
-    when:
-    validator.validate([], description, errors)
-
-    then:
-    1 * errors.rejectValue(_,_)
-  }
-
-  def "Validate pool - error"() {
-    given:
-    ServerGroupParameters params = new ServerGroupParameters(instanceType: instanceType, image:image, maxSize: maxSize, minSize: minSize, networkId: networkId, poolId: '', securityGroups: securityGroups)
-    DeployOpenstackAtomicOperationDescription description = new DeployOpenstackAtomicOperationDescription(account: account, application: application, region: region, stack: stack, freeFormDetails: freeFormDetails, disableRollback: disableRollback, timeoutMins: timeoutMins, serverGroupParameters: params)
-
-    when:
-    validator.validate([], description, errors)
-
-    then:
-    1 * errors.rejectValue(_,_)
-  }
-
-  def "Validate security groups - error"() {
-    given:
-    ServerGroupParameters params = new ServerGroupParameters(instanceType: instanceType, image:image, maxSize: maxSize, minSize: minSize, networkId: networkId, poolId: poolId, securityGroups: [])
-    DeployOpenstackAtomicOperationDescription description = new DeployOpenstackAtomicOperationDescription(account: account, application: application, region: region, stack: stack, freeFormDetails: freeFormDetails, disableRollback: disableRollback, timeoutMins: timeoutMins, serverGroupParameters: params)
-
-    when:
-    validator.validate([], description, errors)
-
-    then:
-    1 * errors.rejectValue(_,_)
   }
 
 }

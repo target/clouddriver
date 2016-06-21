@@ -29,8 +29,8 @@ class DeployOpenstackAtomicOperationDescription extends OpenstackAtomicOperation
   String stack
   String freeFormDetails
   ServerGroupParameters serverGroupParameters
-  Boolean disableRollback
-  Integer timeoutMins
+  Boolean disableRollback = false
+  Integer timeoutMins = 5
 }
 
 

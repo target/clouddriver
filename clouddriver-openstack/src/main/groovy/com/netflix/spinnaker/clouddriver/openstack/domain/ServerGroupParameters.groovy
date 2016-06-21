@@ -20,7 +20,8 @@ import groovy.transform.AutoClone
 import groovy.transform.Canonical
 
 /**
- *
+ * This class is a wrapper for parameters that are passed to an openstack heat template
+ * when auto scaling groups are created.
  */
 @AutoClone
 @Canonical
