@@ -19,6 +19,7 @@ package com.netflix.spinnaker.clouddriver.openstack.cache
 import com.netflix.spinnaker.clouddriver.openstack.OpenstackCloudProvider
 import groovy.transform.CompileStatic
 
+//TODO - Refactor to use template pattern and add to core so common code can be shared across implementations.
 @CompileStatic
 class Keys {
 

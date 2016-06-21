@@ -477,9 +477,9 @@ class OpenstackClientProviderSpec extends Specification {
     noExceptionThrown()
 
     where:
-    testCase           | subnetResult || expected
-    'Subnet found'     | Mock(Subnet) || true
-    'Subnet not found' | null         || false
+    testCase           | subnetResult | expected
+    'Subnet found'     | Mock(Subnet) | true
+    'Subnet not found' | null         | false
   }
 
   def "validate subnet - exception"() {

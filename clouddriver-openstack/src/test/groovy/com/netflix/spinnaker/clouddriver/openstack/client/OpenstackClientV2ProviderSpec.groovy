@@ -42,9 +42,9 @@ class OpenstackClientV2ProviderSpec extends Specification {
     result == expectedResult
 
     where:
-    testCase || expectedResult
-    'empty'  || []
-    'null'   || null
-    'found'  || ['east', 'west']
+    testCase | expectedResult
+    'empty'  | []
+    'null'   | null
+    'found'  | ['east', 'west']
   }
 }

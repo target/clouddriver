@@ -31,10 +31,10 @@ class KeysSpec extends Specification {
     result == expected
 
     where:
-    testCase            | value         || expected
-    'no delimiter'      | 'test'        || null
-    'less than 5 parts' | 'test:test'   || null
-    'more than 5 parts' | 't:t:t:t:t:t' || null
+    testCase            | value         | expected
+    'no delimiter'      | 'test'        | null
+    'less than 5 parts' | 'test:test'   | null
+    'more than 5 parts' | 't:t:t:t:t:t' | null
   }
 
   void "test invalid parts - #testCase"() {
@@ -45,9 +45,9 @@ class KeysSpec extends Specification {
     result == expected
 
     where:
-    testCase    | value               || expected
-    'provider'  | 'openstackprovider' || null
-    'namespace' | 'stuff'             || null
+    testCase    | value               | expected
+    'provider'  | 'openstackprovider' | null
+    'namespace' | 'stuff'             | null
   }
 
   void "test instance map"() {
