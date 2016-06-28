@@ -34,7 +34,6 @@ class DeleteOpenstackSecurityGroupDescriptionValidatorSpec extends Specification
   AccountCredentialsProvider provider
   @Shared
   DeleteOpenstackSecurityGroupDescriptionValidator validator
-  OpenstackNamedAccountCredentials namedAccountCredentials
   OpenstackNamedAccountCredentials credentials
   OpenstackCredentials credz
   OpenstackClientProvider clientProvider
