@@ -47,7 +47,6 @@ class ResizeOpenstackAtomicOperationSpec extends Specification {
   def serverGroupParams
   def description
   def provider
-  def mockPool
 
   def setupSpec() {
     TaskRepository.threadLocalTask.set(Mock(Task))
@@ -67,16 +66,20 @@ class ResizeOpenstackAtomicOperationSpec extends Specification {
     given:
     @Subject def operation = new ResizeOpenstackAtomicOperation(description)
     Stack stack = Mock(Stack)
+    String template = "foo: bar"
+    Map<String, String> sub = ['asg_resource.yaml':'foo: bar']
 
     when:
     operation.operate([])
 
     then:
     1 * provider.getStack(region, createdStackName) >> stack
+    1 * provider.getHeatTemplate(region, createdStackName, stackId) >> template
+    1 * stack.getOutputs() >> [[output_key:operation.SUBTEMPLATE_OUTPUT, output_value: sub['asg_resource.yaml']]]
     1 * stack.getParameters() >> serverGroupParams.toParamsMap()
     _ * stack.getId() >> stackId
     _ * stack.getName() >> createdStackName
-    1 * provider.updateStack(region, createdStackName, stackId, serverGroupParams)
+    1 * provider.updateStack(region, createdStackName, stackId, template, sub, serverGroupParams)
     noExceptionThrown()
   }
 
@@ -96,16 +99,20 @@ class ResizeOpenstackAtomicOperationSpec extends Specification {
     given:
     @Subject def operation = new ResizeOpenstackAtomicOperation(description)
     Stack stack = Mock(Stack)
+    String template = "foo: bar"
+    Map<String, String> sub = ['asg_resource.yaml':'foo: bar']
 
     when:
     operation.operate([])
 
     then:
     1 * provider.getStack(region, createdStackName) >> stack
+    1 * provider.getHeatTemplate(region, createdStackName, stackId) >> template
+    1 * stack.getOutputs() >> [[output_key:operation.SUBTEMPLATE_OUTPUT, output_value: sub['asg_resource.yaml']]]
     1 * stack.getParameters() >> serverGroupParams.toParamsMap()
     _ * stack.getId() >> stackId
     _ * stack.getName() >> createdStackName
-    1 * provider.updateStack(region, createdStackName, stackId, serverGroupParams) >> { throw new OpenstackProviderException('foo') }
+    1 * provider.updateStack(region, createdStackName, stackId, template, sub, serverGroupParams) >> { throw new OpenstackProviderException('foo') }
     thrown(OpenstackOperationException)
   }
 }

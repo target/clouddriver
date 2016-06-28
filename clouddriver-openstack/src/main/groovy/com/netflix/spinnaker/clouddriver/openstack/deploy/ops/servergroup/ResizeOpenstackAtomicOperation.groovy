@@ -33,6 +33,12 @@ class ResizeOpenstackAtomicOperation implements AtomicOperation<Void> {
 
   private final String BASE_PHASE = "RESIZE"
 
+  //this is the name of the subtemplate referenced by the template,
+  //and needs to be loaded into memory as a String
+  final String SUBTEMPLATE_FILE = 'asg_resource.yaml'
+
+  final String SUBTEMPLATE_OUTPUT = 'asg_resource'
+
   ResizeOpenstackAtomicOperationDescription description
 
   ResizeOpenstackAtomicOperation(ResizeOpenstackAtomicOperationDescription description) {
@@ -44,7 +50,7 @@ class ResizeOpenstackAtomicOperation implements AtomicOperation<Void> {
   }
 
   /*
-   * curl -X POST -H "Content-Type: application/json" -d '[ { "resizeServerGroup": { "serverGroupName": "app-test-v000", "capacity": { "min": 1, "max": 2 }, "account": "test", "region": "REGION1" }} ]' localhost:7002/openstack/ops
+   * curl -X POST -H "Content-Type: application/json" -d '[ { "resizeServerGroup": { "serverGroupName": "myapp-teststack-v000", "capacity": { "min": 1, "max": 2 }, "account": "test", "region": "REGION1" }} ]' localhost:7002/openstack/ops
    * curl -X GET -H "Accept: application/json" localhost:7002/task/1
    */
   @Override
@@ -56,6 +62,9 @@ class ResizeOpenstackAtomicOperation implements AtomicOperation<Void> {
       //get stack from server group
       task.updateStatus BASE_PHASE, "Fetching server group $description.serverGroupName"
       Stack stack = provider.getStack(description.region, description.serverGroupName)
+      //we need to store subtemplate in asg output from create, as it is required to do an update and there is no native way of
+      //obtaining it from a stack
+      String subtemplate = stack.getOutputs().find { m -> m.get("output_key").equals(SUBTEMPLATE_OUTPUT) }.get("output_value")
       task.updateStatus BASE_PHASE, "Successfully fetched server group $description.serverGroupName"
 
       //update the min and max parameters
@@ -66,9 +75,14 @@ class ResizeOpenstackAtomicOperation implements AtomicOperation<Void> {
         maxSize = description.capacity.max
       }
 
+      //get the current template from the stack
+      task.updateStatus BASE_PHASE, "Fetching current template for server group $description.serverGroupName"
+      String template = provider.getHeatTemplate(description.region, stack.name, stack.id)
+      task.updateStatus BASE_PHASE, "Successfully fetched current template for server group $description.serverGroupName"
+
       //update stack
       task.updateStatus BASE_PHASE, "Updating server group $stack.name with new min size $newParams.minSize and max size $newParams.maxSize"
-      provider.updateStack(description.region, stack.name, stack.id, newParams)
+      provider.updateStack(description.region, stack.name, stack.id, template, [(SUBTEMPLATE_FILE): subtemplate], newParams)
       task.updateStatus BASE_PHASE, "Successfully updated server group $stack.name"
 
       task.updateStatus BASE_PHASE, "Successfully resized server group."

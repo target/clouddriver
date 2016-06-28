@@ -1602,7 +1602,7 @@ class OpenstackClientProviderSpec extends Specification {
     provider.deploy(region, stackName, tmpl, subtmpl, parameters, disableRollback, timeoutMins)
 
     then:
-    1 * stackApi.create(_ as StackCreate) >> { throw new OpenstackProviderException('foobar') }
+    1 * stackApi.create(_ as StackCreate) >> { throw new Exception('foobar') }
     Exception e = thrown(OpenstackProviderException)
     e.message == 'Unable to process request'
     e.cause.message == 'foobar'
@@ -2271,9 +2271,11 @@ class OpenstackClientProviderSpec extends Specification {
       'pool_id':parameters.poolId,
       'security_groups':parameters.securityGroups.join(',')
     ]
+    String template = "foo: bar"
+    Map<String, String> subtmpl = [sub:"foo: bar"]
 
     when:
-    provider.updateStack(region, stackName, stackId, parameters)
+    provider.updateStack(region, stackName, stackId, template, subtmpl, parameters)
 
     then:
     1 * stackService.update(stackName, stackId, _ as StackUpdate) >> { String name, String id, StackUpdate su ->
@@ -2306,9 +2308,11 @@ class OpenstackClientProviderSpec extends Specification {
     String poolId = '5678'
     List<String> securityGroups = ['sg1']
     ServerGroupParameters parameters = new ServerGroupParameters(instanceType: instanceType, image:image, maxSize: maxSize, minSize: minSize, networkId: networkId, poolId: poolId, securityGroups: securityGroups)
+    String template = "foo: bar"
+    Map<String, String> subtmpl = [sub:"foo: bar"]
 
     when:
-    provider.updateStack(region, stackName, stackId, parameters)
+    provider.updateStack(region, stackName, stackId, template, subtmpl, parameters)
 
     then:
     1 * stackService.update(stackName, stackId, _ as StackUpdate) >> { String name, String id, StackUpdate su ->
@@ -2337,9 +2341,11 @@ class OpenstackClientProviderSpec extends Specification {
     String poolId = '5678'
     List<String> securityGroups = ['sg1']
     ServerGroupParameters parameters = new ServerGroupParameters(instanceType: instanceType, image:image, maxSize: maxSize, minSize: minSize, networkId: networkId, poolId: poolId, securityGroups: securityGroups)
+    String template = "foo: bar"
+    Map<String, String> subtmpl = [sub:"foo: bar"]
 
     when:
-    provider.updateStack(region, stackName, stackId, parameters)
+    provider.updateStack(region, stackName, stackId, template, subtmpl, parameters)
 
     then:
     1 * stackService.update(stackName, stackId, _ as StackUpdate) >> { throw new Exception('foo') }
