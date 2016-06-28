@@ -16,27 +16,22 @@
 
 package com.netflix.spinnaker.clouddriver.openstack.deploy.validators.servergroup
 
-import com.netflix.spinnaker.clouddriver.deploy.DescriptionValidator
 import com.netflix.spinnaker.clouddriver.openstack.OpenstackOperation
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergroup.OpenstackServerGroupAtomicOperationDescription
 import com.netflix.spinnaker.clouddriver.openstack.deploy.validators.OpenstackAttributeValidator
+import com.netflix.spinnaker.clouddriver.openstack.deploy.validators.AbstractOpenstackDescriptionValidator
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperations
-import com.netflix.spinnaker.clouddriver.security.AccountCredentialsProvider
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.validation.Errors
 
 @OpenstackOperation(AtomicOperations.ENABLE_SERVER_GROUP)
 @Component
-class EnableOpenstackAtomicOperationValidator extends DescriptionValidator<OpenstackServerGroupAtomicOperationDescription> {
-  @Autowired
-  AccountCredentialsProvider accountCredentialsProvider
+class EnableOpenstackAtomicOperationValidator extends AbstractOpenstackDescriptionValidator<OpenstackServerGroupAtomicOperationDescription> {
 
+  String context = "enableOpenstackServerGroupAtomicOperationDescription"
   @Override
-  void validate(List priorDescriptions, OpenstackServerGroupAtomicOperationDescription description, Errors errors) {
-    def validator = new OpenstackAttributeValidator("openstackServerGroupAtomicOperationDescription", errors)
-    validator.validateCredentials(description.account, accountCredentialsProvider)
-    validator.validateNotEmpty(description.region, "region")
+  void validate(OpenstackAttributeValidator validator, List priorDescriptions, OpenstackServerGroupAtomicOperationDescription description, Errors errors) {
     validator.validateNotEmpty(description.serverGroupName, "serverGroupName")
   }
+
 }

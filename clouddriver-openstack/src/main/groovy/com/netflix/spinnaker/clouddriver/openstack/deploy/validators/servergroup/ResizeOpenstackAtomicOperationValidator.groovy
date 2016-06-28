@@ -17,22 +17,25 @@
 package com.netflix.spinnaker.clouddriver.openstack.deploy.validators.servergroup
 
 import com.netflix.spinnaker.clouddriver.openstack.OpenstackOperation
-import com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergroup.OpenstackServerGroupAtomicOperationDescription
+import com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergroup.ResizeOpenstackAtomicOperationDescription
 import com.netflix.spinnaker.clouddriver.openstack.deploy.validators.OpenstackAttributeValidator
 import com.netflix.spinnaker.clouddriver.openstack.deploy.validators.AbstractOpenstackDescriptionValidator
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperations
 import org.springframework.stereotype.Component
 import org.springframework.validation.Errors
 
-@OpenstackOperation(AtomicOperations.DESTROY_SERVER_GROUP)
+@OpenstackOperation(AtomicOperations.RESIZE_SERVER_GROUP)
 @Component
-class DestroyOpenstackAtomicOperationValidator extends AbstractOpenstackDescriptionValidator<OpenstackServerGroupAtomicOperationDescription> {
+class ResizeOpenstackAtomicOperationValidator extends AbstractOpenstackDescriptionValidator<ResizeOpenstackAtomicOperationDescription> {
 
-  String context = "openstackServerGroupAtomicOperationDescription"
+  String context = "resizeOpenstackServerGroupAtomicOperationDescription"
 
   @Override
-  void validate(OpenstackAttributeValidator validator, List priorDescriptions, OpenstackServerGroupAtomicOperationDescription description, Errors errors) {
+  void validate(OpenstackAttributeValidator validator, List priorDescriptions, ResizeOpenstackAtomicOperationDescription description, Errors errors) {
     validator.validateNotEmpty(description.serverGroupName, "serverGroupName")
+    validator.validateNotNull(description.capacity, "capacity")
+    validator.validatePositive(description.capacity.min, "capacity.min")
+    validator.validateGreaterThanEqual(description.capacity.max, description.capacity.min, "capacity.max")
   }
 
 }

@@ -16,7 +16,6 @@
 
 package com.netflix.spinnaker.clouddriver.openstack.client
 
-import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackOperationException
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackProviderException
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackResourceNotFoundException
 import com.netflix.spinnaker.clouddriver.openstack.domain.LoadBalancerPool
@@ -36,6 +35,7 @@ import org.openstack4j.model.compute.Server
 import org.openstack4j.model.heat.Resource
 import org.openstack4j.model.heat.Stack
 import org.openstack4j.model.heat.StackCreate
+import org.openstack4j.model.heat.StackUpdate
 import org.openstack4j.model.network.NetFloatingIP
 import org.openstack4j.model.network.Port
 import org.openstack4j.model.network.ext.HealthMonitor
@@ -518,6 +518,23 @@ abstract class OpenstackClientProvider {
   }
 
   /**
+   * Updates a Spinnaker Server Group (Openstack Heat Stack).
+   * @param stackName
+   * @param heatTemplate
+   * @param parameters
+   * @param disableRollback
+   * @param timeoutMins
+   * @return
+   */
+  void updateStack(String region, String stackName, String stackId, String template, Map<String, String> subtemplate, ServerGroupParameters parameters) {
+    handleRequest {
+      Map<String, String> params = parameters.toParamsMap()
+      StackUpdate update = Builders.stackUpdate().template(template).files(subtemplate).parameters(params).build()
+      getRegionClient(region).heat().stacks().update(stackName, stackId, update)
+    }
+  }
+
+  /**
    * Get a heat template from an existing Openstack Heat Stack
    * @param region
    * @param stackName
@@ -525,11 +542,8 @@ abstract class OpenstackClientProvider {
    * @return
    */
   String getHeatTemplate(String region, String stackName, String stackId) {
-    try {
-      def template = client.useRegion(region).heat().templates().getTemplateAsString(stackName, stackId)
-      return template
-    } catch (Exception e) {
-      throw new OpenstackOperationException(e)
+    handleRequest {
+      client.useRegion(region).heat().templates().getTemplateAsString(stackName, stackId)
     }
   }
 
@@ -731,6 +745,8 @@ abstract class OpenstackClientProvider {
       result = closure()
     } catch (UndeclaredThrowableException e) {
       throw new OpenstackProviderException('Unable to process request', e.cause)
+    } catch (OpenstackProviderException e) { //allows nested calls to handleRequest
+      throw e
     } catch (Exception e) {
       throw new OpenstackProviderException('Unable to process request', e)
     }
