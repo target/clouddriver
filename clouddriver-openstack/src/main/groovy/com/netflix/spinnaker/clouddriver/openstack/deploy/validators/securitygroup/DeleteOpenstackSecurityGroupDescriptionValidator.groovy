@@ -32,14 +32,11 @@ import org.springframework.validation.Errors
 @Component
 class DeleteOpenstackSecurityGroupDescriptionValidator extends AbstractOpenstackDescriptionValidator<DeleteOpenstackSecurityGroupDescription> {
 
+  String context = "deleteOpenstackSecurityGroupAtomicOperationDescription" +
+    ""
   @Override
   void validate(OpenstackAttributeValidator validator, List priorDescriptions, DeleteOpenstackSecurityGroupDescription description, Errors errors) {
     validator.validateUUID(description.id, "id")
-  }
-
-  @Override
-  String getContext() {
-    "deleteOpenstackSecurityGroupAtomicOperationDescription"
   }
 
 }

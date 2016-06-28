@@ -28,20 +28,14 @@ import org.springframework.validation.Errors
 @Component
 class ResizeOpenstackAtomicOperationValidator extends AbstractOpenstackDescriptionValidator<ResizeOpenstackAtomicOperationDescription> {
 
+  String context = "resizeOpenstackServerGroupAtomicOperationDescription"
+
   @Override
   void validate(OpenstackAttributeValidator validator, List priorDescriptions, ResizeOpenstackAtomicOperationDescription description, Errors errors) {
     validator.validateNotEmpty(description.serverGroupName, "serverGroupName")
-    validateCapacity(validator, description.capacity)
+    validator.validateNotNull(description.capacity, "capacity")
+    validator.validatePositive(description.capacity.min, "capacity.min")
+    validator.validateGreaterThanEqual(description.capacity.max, description.capacity.min, "capacity.max")
   }
 
-  @Override
-  String getContext() {
-    "openstackServerGroupAtomicOperationDescription"
-  }
-
-  def validateCapacity(OpenstackAttributeValidator validator, ResizeOpenstackAtomicOperationDescription.Capacity capacity) {
-    validator.validateNotNull(capacity, "capacity")
-    validator.validatePositive(capacity.min, "capacity.min")
-    validator.validateGreaterThanEqual(capacity.max, capacity.min, "capacity.max")
-  }
 }

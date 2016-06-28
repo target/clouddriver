@@ -22,6 +22,11 @@ import com.netflix.spinnaker.clouddriver.security.AccountCredentialsProvider
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.validation.Errors
 
+/**
+ * This class serves as base class for all openstack atomic operation validators.
+ * It validates region and account information, which are common to all atomic operations.
+ * @param <T>
+ */
 abstract class AbstractOpenstackDescriptionValidator<T extends OpenstackAtomicOperationDescription> extends DescriptionValidator<T> {
 
   @Autowired

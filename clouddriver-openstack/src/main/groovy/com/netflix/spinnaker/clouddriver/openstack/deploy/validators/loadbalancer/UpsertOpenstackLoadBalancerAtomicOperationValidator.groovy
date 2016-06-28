@@ -29,6 +29,8 @@ import org.springframework.validation.Errors
 @Component
 class UpsertOpenstackLoadBalancerAtomicOperationValidator extends AbstractOpenstackDescriptionValidator<OpenstackLoadBalancerDescription> {
 
+  String context = "upsertOpenstackLoadBalancerAtomicOperationDescription"
+
   @Override
   void validate(OpenstackAttributeValidator validator, List priorDescriptions, OpenstackLoadBalancerDescription description, Errors errors) {
 
@@ -51,11 +53,6 @@ class UpsertOpenstackLoadBalancerAtomicOperationValidator extends AbstractOpenst
     if (description.floatingIpId) {
       validator.validateUUID(description.floatingIpId, 'floatingIpId')
     }
-  }
-
-  @Override
-  String getContext() {
-    "upsertOpenstackLoadBalancerAtomicOperationDescription"
   }
 
   /**

@@ -26,9 +26,6 @@ import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperation
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperations
 import org.openstack4j.model.heat.Stack
 
-/**
- *
- */
 class ResizeOpenstackAtomicOperation implements AtomicOperation<Void> {
 
   private final String BASE_PHASE = "RESIZE"

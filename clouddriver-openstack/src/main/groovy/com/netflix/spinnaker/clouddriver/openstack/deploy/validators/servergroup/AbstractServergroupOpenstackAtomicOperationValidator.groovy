@@ -22,12 +22,12 @@ import com.netflix.spinnaker.clouddriver.openstack.deploy.validators.OpenstackAt
 import com.netflix.spinnaker.clouddriver.openstack.domain.ServerGroupParameters
 
 /**
- *
+ * This class adds validation for creating and cloning server groups.
  */
-abstract class AbstractOpenstackAtomicOperationValidator<T extends OpenstackAtomicOperationDescription> extends AbstractOpenstackDescriptionValidator<T> {
+abstract class AbstractServergroupOpenstackAtomicOperationValidator<T extends OpenstackAtomicOperationDescription> extends AbstractOpenstackDescriptionValidator<T> {
 
   /**
-   * Validate server group parameters
+   * Validate server group parameters.
    * @param validator
    * @param parameters
    * @return

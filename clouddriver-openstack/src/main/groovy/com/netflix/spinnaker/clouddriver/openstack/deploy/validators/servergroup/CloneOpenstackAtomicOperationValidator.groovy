@@ -24,8 +24,10 @@ import org.springframework.stereotype.Component
 import org.springframework.validation.Errors
 
 @OpenstackOperation(AtomicOperations.CLONE_SERVER_GROUP)
-@Component("cloneOpenstackAtomicOperationValidator")
-class CloneOpenstackAtomicOperationValidator extends AbstractOpenstackAtomicOperationValidator<CloneOpenstackAtomicOperationDescription> {
+@Component
+class CloneOpenstackAtomicOperationValidator extends AbstractServergroupOpenstackAtomicOperationValidator<CloneOpenstackAtomicOperationDescription> {
+
+  String context = "cloneOpenstackAtomicOperationDescription"
 
   @Override
   void validate(OpenstackAttributeValidator validator, List priorDescriptions, CloneOpenstackAtomicOperationDescription description, Errors errors) {
@@ -45,11 +47,6 @@ class CloneOpenstackAtomicOperationValidator extends AbstractOpenstackAtomicOper
     if (description.timeoutMins) {
       validator.validateNonNegative(description.timeoutMins, "timeoutMins")
     }
-  }
-
-  @Override
-  String getContext() {
-    "cloneOpenstackAtomicOperationDescription"
   }
 
 }

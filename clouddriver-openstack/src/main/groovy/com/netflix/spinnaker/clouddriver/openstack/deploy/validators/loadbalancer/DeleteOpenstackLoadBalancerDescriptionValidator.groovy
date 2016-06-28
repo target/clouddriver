@@ -28,14 +28,10 @@ import org.springframework.validation.Errors
 @Component
 class DeleteOpenstackLoadBalancerDescriptionValidator extends AbstractOpenstackDescriptionValidator<DeleteOpenstackLoadBalancerDescription> {
 
+  String context = "deleteOpenstackLoadBalancerAtomicOperationDescription"
   @Override
   void validate(OpenstackAttributeValidator validator, List priorDescriptions, DeleteOpenstackLoadBalancerDescription description, Errors errors) {
     validator.validateUUID(description.id, 'id')
-  }
-
-  @Override
-  String getContext() {
-    "deleteOpenstackLoadBalancerAtomicOperationDescription"
   }
 
 }

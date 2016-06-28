@@ -19,9 +19,6 @@ package com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergro
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.OpenstackAtomicOperationDescription
 import groovy.transform.Canonical
 
-/**
- *
- */
 @Canonical
 class ResizeOpenstackAtomicOperationDescription extends OpenstackAtomicOperationDescription {
 

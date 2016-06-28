@@ -28,13 +28,10 @@ import org.springframework.validation.Errors
 @Component
 class RebootOpenstackInstancesDescriptionValidator extends AbstractOpenstackDescriptionValidator<OpenstackInstancesDescription> {
 
+  String context = "rebootOpenstackRegistrationAtomicOperationDescription"
+
   @Override
   void validate(OpenstackAttributeValidator validator, List priorDescriptions, OpenstackInstancesDescription description, Errors errors) {
     validator.validateNotEmpty(description.instanceIds, "instanceIds")
-  }
-
-  @Override
-  String getContext() {
-    "rebootOpenstackRegistrationAtomicOperationDescription"
   }
 }

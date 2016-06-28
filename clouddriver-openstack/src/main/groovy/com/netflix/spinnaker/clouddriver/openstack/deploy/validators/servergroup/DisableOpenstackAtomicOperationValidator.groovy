@@ -28,13 +28,11 @@ import org.springframework.validation.Errors
 @Component
 class DisableOpenstackAtomicOperationValidator extends AbstractOpenstackDescriptionValidator<OpenstackServerGroupAtomicOperationDescription> {
 
+  String context = "disableOpenstackServerGroupAtomicOperationDescription"
+
   @Override
   void validate(OpenstackAttributeValidator validator, List priorDescriptions, OpenstackServerGroupAtomicOperationDescription description, Errors errors) {
     validator.validateNotEmpty(description.serverGroupName, "serverGroupName")
   }
 
-  @Override
-  String getContext() {
-    "openstackServerGroupAtomicOperationDescription"
-  }
 }

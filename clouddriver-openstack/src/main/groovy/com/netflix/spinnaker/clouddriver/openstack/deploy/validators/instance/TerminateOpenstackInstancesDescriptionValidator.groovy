@@ -28,13 +28,11 @@ import org.springframework.validation.Errors
 @Component
 class TerminateOpenstackInstancesDescriptionValidator extends AbstractOpenstackDescriptionValidator<OpenstackInstancesDescription> {
 
+  String context = "terminateOpenstackRegistrationAtomicOperationDescription"
+
   @Override
   void validate(OpenstackAttributeValidator validator, List priorDescriptions, OpenstackInstancesDescription description, Errors errors) {
     validator.validateNotEmpty(description.instanceIds, "instanceIds")
   }
 
-  @Override
-  String getContext() {
-    "terminateOpenstackRegistrationAtomicOperationDescription"
-  }
 }

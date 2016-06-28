@@ -33,6 +33,8 @@ import org.springframework.validation.Errors
 @Component
 class UpsertOpenstackSecurityGroupDescriptionValidator extends AbstractOpenstackDescriptionValidator<UpsertOpenstackSecurityGroupDescription> {
 
+  String context = "upsertOpenstackSecurityGroupAtomicOperationDescription"
+
   @Override
   void validate(OpenstackAttributeValidator validator, List priorDescriptions, UpsertOpenstackSecurityGroupDescription description, Errors errors) {
     if (StringUtils.isNotEmpty(description.id)) {
@@ -46,11 +48,6 @@ class UpsertOpenstackSecurityGroupDescriptionValidator extends AbstractOpenstack
         validator.validateRuleType(r.ruleType, 'ruleType')
       }
     }
-  }
-
-  @Override
-  String getContext() {
-    "upsertOpenstackSecurityGroupAtomicOperationDescription"
   }
 
 }

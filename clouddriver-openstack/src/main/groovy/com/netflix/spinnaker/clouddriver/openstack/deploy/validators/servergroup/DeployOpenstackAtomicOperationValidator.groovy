@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 Veritas Technologies LLC.
+ * Copyright 2016 Target, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +26,9 @@ import org.springframework.validation.Errors
 
 @OpenstackOperation(AtomicOperations.CREATE_SERVER_GROUP)
 @Component
-class DeployOpenstackAtomicOperationValidator extends AbstractOpenstackAtomicOperationValidator<DeployOpenstackAtomicOperationDescription> {
+class DeployOpenstackAtomicOperationValidator extends AbstractServergroupOpenstackAtomicOperationValidator<DeployOpenstackAtomicOperationDescription> {
+
+  String context = "deployOpenstackAtomicOperationDescription"
 
   @Override
   void validate(OpenstackAttributeValidator validator, List priorDescriptions, DeployOpenstackAtomicOperationDescription description, Errors errors) {
@@ -34,11 +37,6 @@ class DeployOpenstackAtomicOperationValidator extends AbstractOpenstackAtomicOpe
     validator.validateDetails(description.freeFormDetails, "details")
     validator.validateNonNegative(description.timeoutMins, "timeoutMins")
     validateServerGroup(validator, description.serverGroupParameters)
-  }
-
-  @Override
-  String getContext() {
-    "deployOpenstackAtomicOperationDescription"
   }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Veritas Technologies LLC.
+ * Copyright 2016 Target, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,10 +35,8 @@ class ResizeOpenstackAtomicOperationSpec extends Specification {
   String application = "app"
   String stack = "stack"
   String region = "r1"
-  int internalPort = 8100
   int maxSize = 5
   int minSize = 3
-  String poolId = '5678'
   String createdStackName = 'app-stack-details-v000'
   String stackId = UUID.randomUUID().toString()
 
