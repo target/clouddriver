@@ -37,6 +37,7 @@ import org.openstack4j.model.heat.Resource
 import org.openstack4j.model.heat.Stack
 import org.openstack4j.model.heat.StackCreate
 import org.openstack4j.model.network.NetFloatingIP
+import org.openstack4j.model.network.Network
 import org.openstack4j.model.network.Port
 import org.openstack4j.model.network.ext.HealthMonitor
 import org.openstack4j.model.network.ext.HealthMonitorType
@@ -343,6 +344,34 @@ abstract class OpenstackClientProvider {
   ActionResponse disassociateHealthMonitor(String region, String lbPoolId, String healthMonitorId) {
     handleRequest {
       getRegionClient(region).networking().loadbalancers().lbPool().disAssociateHealthMonitor(lbPoolId, healthMonitorId)
+    }
+  }
+
+/**
+ * Get a network from the network id.
+ * @param region
+ * @param networkId
+ * @return
+ */
+  Network getNetwork(final String region, final String networkId) {
+    handleRequest {
+      getRegionClient(region).networking().network().list().find { n -> n.id == networkId }
+    }
+  }
+
+  /**
+   * Get an unallocated IP from the network, or if none are found, try to create a new floating IP in the network.
+   * @param region
+   * @param networkName
+   * @return
+   */
+  FloatingIP getOrCreateFloatingIp(final String region, final String networkName) {
+    handleRequest {
+      FloatingIP ip = getRegionClient(region).compute().floatingIps().list().find { !it.fixedIpAddress }
+      if (!ip) {
+        ip = client.useRegion(region).compute().floatingIps().allocateIP(networkName)
+      }
+      ip
     }
   }
 
