@@ -355,7 +355,7 @@ abstract class OpenstackClientProvider {
  */
   Network getNetwork(final String region, final String networkId) {
     handleRequest {
-      getRegionClient(region).networking().network().list().find { n -> n.id == networkId }
+      getRegionClient(region).networking().network().list().find { it.id == networkId }
     }
   }
 
