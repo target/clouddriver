@@ -28,6 +28,11 @@ import com.netflix.spinnaker.clouddriver.openstack.OpenstackCloudProvider
 import groovy.transform.Immutable
 import org.openstack4j.model.compute.SecGroupExtension
 
+/*
+ * TODO Support rules of type remote as well
+ * A remote rule references another security group. Any instance using the other
+ * security group gets this security group applied as well.
+ */
 @Immutable
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 class OpenstackSecurityGroup implements SecurityGroup {
@@ -69,6 +74,10 @@ class OpenstackSecurityGroup implements SecurityGroup {
   }
 
   private static AddressableRange buildAddressableRangeFromCidr(String cidr) {
+    if (!cidr) {
+      return null
+    }
+
     def rangeParts = cidr.split('/') as List
 
     // If the cidr just a single IP address, use 32 as the mask

@@ -49,6 +49,7 @@ class OpenstackSecurityGroupCachingAgent extends AbstractOpenstackCachingAgent {
   CacheResult loadData(ProviderCache providerCache) {
     CacheResultBuilder cacheResultBuilder = new CacheResultBuilder()
     clientProvider.getSecurityGroups(region).each { securityGroup ->
+      log.debug("Caching security group for account $accountName in region $region: $securityGroup")
       OpenstackSecurityGroup openstackSecurityGroup = OpenstackSecurityGroup.from(securityGroup, accountName, region)
       String instanceKey = Keys.getSecurityGroupKey(securityGroup.name, securityGroup.id, accountName, region)
       cacheResultBuilder.namespace(SECURITY_GROUPS.ns).keep(instanceKey).with {
