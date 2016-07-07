@@ -24,15 +24,11 @@ import com.netflix.spinnaker.clouddriver.model.SecurityGroup
 import com.netflix.spinnaker.clouddriver.model.SecurityGroupSummary
 import com.netflix.spinnaker.clouddriver.model.securitygroups.IpRangeRule
 import com.netflix.spinnaker.clouddriver.model.securitygroups.Rule
+import com.netflix.spinnaker.clouddriver.model.securitygroups.SecurityGroupRule
 import com.netflix.spinnaker.clouddriver.openstack.OpenstackCloudProvider
 import groovy.transform.Immutable
 import org.openstack4j.model.compute.SecGroupExtension
 
-/*
- * TODO Support rules of type remote as well
- * A remote rule references another security group. Any instance using the other
- * security group gets this security group applied as well.
- */
 @Immutable
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 class OpenstackSecurityGroup implements SecurityGroup {
@@ -58,19 +54,37 @@ class OpenstackSecurityGroup implements SecurityGroup {
       region: region,
       name: securityGroup.name,
       description: securityGroup.description,
-      inboundRules: buildInboundRules(securityGroup)
+      inboundRules: buildInboundRules(securityGroup, accountName, region)
     )
   }
 
-  private static List<Rule> buildInboundRules(SecGroupExtension securityGroup) {
-    securityGroup.rules.collect { sgr ->
-      def portRange = new Rule.PortRange(startPort: sgr.fromPort, endPort: sgr.toPort)
-      def addressableRange = buildAddressableRangeFromCidr(sgr.range.cidr)
-      new IpRangeRule(protocol: sgr.IPProtocol.value(),
-        portRanges: [portRange] as SortedSet,
-        range: addressableRange
-      )
+  private static List<Rule> buildInboundRules(SecGroupExtension securityGroup, String accountName, String region) {
+    securityGroup.rules.collect { rule ->
+      rule.range.cidr ? buildIpRangeRule(rule) : buildSecurityGroupRule(rule, accountName, region)
     }
+  }
+
+  private static SecurityGroupRule buildSecurityGroupRule(SecGroupExtension.Rule rule, String accountName, String region) {
+    def portRange = new Rule.PortRange(startPort: rule.fromPort, endPort: rule.toPort)
+    def securityGroup = new OpenstackSecurityGroup(
+      name: rule.group.name,
+      type: OpenstackCloudProvider.ID,
+      accountName: accountName,
+      region: region
+    )
+    new SecurityGroupRule(protocol: rule.IPProtocol.value(),
+      portRanges: [portRange] as SortedSet,
+      securityGroup: securityGroup
+    )
+  }
+
+  private static IpRangeRule buildIpRangeRule(SecGroupExtension.Rule rule) {
+    def portRange = new Rule.PortRange(startPort: rule.fromPort, endPort: rule.toPort)
+    def addressableRange = buildAddressableRangeFromCidr(rule.range.cidr)
+    new IpRangeRule(protocol: rule.IPProtocol.value(),
+      portRanges: [portRange] as SortedSet,
+      range: addressableRange
+    )
   }
 
   private static AddressableRange buildAddressableRangeFromCidr(String cidr) {

@@ -26,7 +26,7 @@ import groovy.transform.Sortable
  * @see IpRangeRule
  * @see SecurityGroupRule
  */
-@JsonTypeInfo(use=JsonTypeInfo.Id.CLASS, include=JsonTypeInfo.As.PROPERTY, property="class")
+@JsonTypeInfo(use=JsonTypeInfo.Id.CLASS, include=JsonTypeInfo.As.PROPERTY, property='class')
 interface Rule {
   /**
    * The port ranges associated with this rule
