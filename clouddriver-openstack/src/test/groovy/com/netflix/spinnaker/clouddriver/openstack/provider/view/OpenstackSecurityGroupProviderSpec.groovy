@@ -28,6 +28,7 @@ import com.netflix.spinnaker.clouddriver.openstack.OpenstackCloudProvider
 import com.netflix.spinnaker.clouddriver.openstack.cache.Keys
 import com.netflix.spinnaker.clouddriver.openstack.model.OpenstackSecurityGroup
 import com.netflix.spinnaker.clouddriver.openstack.provider.OpenstackInfrastructureProvider
+import redis.clients.jedis.exceptions.JedisException
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
@@ -173,6 +174,38 @@ class OpenstackSecurityGroupProviderSpec extends Specification {
     'account1' | 'west' | 'name-west' | account1West[0]
     'account2' | 'west' | 'name-west' | account2West[0]
   }
+
+  def "get all with an empty cache"() {
+    given:
+    // Recreate the provider with an empty cache
+    cache = new InMemoryCache()
+    provider = new OpenstackSecurityGroupProvider(cache, mapper)
+
+    when:
+    def securityGroups = provider.getAll(false)
+
+    then:
+    securityGroups.empty
+  }
+
+  void "get all throws an exception"() {
+    given:
+    // Recreate the provider with a mock cache to enable throwing an exception
+    cache = Mock(WriteableCache)
+    provider = new OpenstackSecurityGroupProvider(cache, mapper)
+    def filters = []
+    def throwable = new JedisException('test')
+
+    when:
+    provider.getAll(false)
+
+    then:
+    1 * cache.filterIdentifiers(Keys.Namespace.SECURITY_GROUPS.ns, _) >> filters
+    1 * cache.getAll(Keys.Namespace.SECURITY_GROUPS.ns, filters, _) >> { throw throwable }
+    Throwable exception = thrown(JedisException)
+    exception == throwable
+  }
+
 
   def createSecurityGroup(String account, String region) {
     new OpenstackSecurityGroup(id: UUID.randomUUID().toString(),

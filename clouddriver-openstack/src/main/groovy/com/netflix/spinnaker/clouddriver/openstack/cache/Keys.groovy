@@ -92,11 +92,7 @@ class Keys {
             if (parts.length == 6) {
               def names = Names.parseName(parts[2])
               result << [
-                application: names.app,
-                name       : parts[2],
-                id         : parts[3],
-                region     : parts[4],
-                account    : parts[5]
+                application: names.app, name: parts[2], id: parts[3], region: parts[4], account: parts[5]
               ]
             }
             break

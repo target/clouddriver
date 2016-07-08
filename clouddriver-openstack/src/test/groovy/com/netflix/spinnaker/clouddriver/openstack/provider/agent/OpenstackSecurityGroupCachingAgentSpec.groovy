@@ -25,6 +25,7 @@ import com.netflix.spinnaker.clouddriver.model.securitygroups.IpRangeRule
 import com.netflix.spinnaker.clouddriver.model.securitygroups.Rule
 import com.netflix.spinnaker.clouddriver.openstack.cache.Keys
 import com.netflix.spinnaker.clouddriver.openstack.client.OpenstackClientProvider
+import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackProviderException
 import com.netflix.spinnaker.clouddriver.openstack.model.OpenstackSecurityGroup
 import com.netflix.spinnaker.clouddriver.openstack.provider.OpenstackInfrastructureProvider
 import com.netflix.spinnaker.clouddriver.openstack.security.OpenstackCredentials
@@ -137,5 +138,36 @@ class OpenstackSecurityGroupCachingAgentSpec extends Specification {
     def cacheData = cacheResult.cacheResults.get(SECURITY_GROUPS.ns).first()
     cacheData.id == key
     cacheData.attributes == instanceAttributes
+  }
+
+  def "load data finds no security groups"() {
+    when:
+    CacheResult cacheResult = cachingAgent.loadData(providerCache)
+
+    then:
+    1 * provider.getSecurityGroups(region) >> []
+    cacheResult.cacheResults.get(SECURITY_GROUPS.ns).empty
+  }
+
+  def "get security groups handles null"() {
+    when:
+    CacheResult cacheResult = cachingAgent.loadData(providerCache)
+
+    then:
+    1 * provider.getSecurityGroups(region) >> null
+    cacheResult.cacheResults.get(SECURITY_GROUPS.ns).empty
+  }
+
+  def "load data lets exception bubble up"() {
+    given:
+    Throwable exception = new OpenstackProviderException()
+
+    when:
+    CacheResult cacheResult = cachingAgent.loadData(providerCache)
+
+    then:
+    1 * provider.getSecurityGroups(region) >> { throw exception }
+    def ex = thrown(Exception)
+    exception == ex
   }
 }
