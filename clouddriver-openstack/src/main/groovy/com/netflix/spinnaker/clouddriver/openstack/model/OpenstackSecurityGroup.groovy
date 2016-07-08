@@ -60,7 +60,8 @@ class OpenstackSecurityGroup implements SecurityGroup {
 
   private static List<Rule> buildInboundRules(SecGroupExtension securityGroup, String accountName, String region) {
     securityGroup.rules.collect { rule ->
-      rule.range.cidr ? buildIpRangeRule(rule) : buildSecurityGroupRule(rule, accountName, region)
+      // The Openstack4J library doesn't put a type on the rule, instead, it includes a range object with a null cidr
+      rule.range?.cidr ? buildIpRangeRule(rule) : buildSecurityGroupRule(rule, accountName, region)
     }
   }
 
