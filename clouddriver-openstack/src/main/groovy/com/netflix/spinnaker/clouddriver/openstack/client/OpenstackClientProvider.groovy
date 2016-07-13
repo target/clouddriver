@@ -42,7 +42,13 @@ import org.openstack4j.model.network.NetFloatingIP
 import org.openstack4j.model.network.Network
 import org.openstack4j.model.network.Port
 import org.openstack4j.model.network.Subnet
-import org.openstack4j.model.network.ext.*
+import org.openstack4j.model.network.ext.HealthMonitor
+import org.openstack4j.model.network.ext.HealthMonitorType
+import org.openstack4j.model.network.ext.LbMethod
+import org.openstack4j.model.network.ext.LbPool
+import org.openstack4j.model.network.ext.Member
+import org.openstack4j.model.network.ext.Protocol
+import org.openstack4j.model.network.ext.Vip
 
 import java.lang.reflect.UndeclaredThrowableException
 import java.util.regex.Matcher
@@ -51,7 +57,7 @@ import java.util.regex.Pattern
 /**
  * Provides access to the Openstack API.
  *
- * TODO region support will need to be added to all client calls not already using regions
+ * TODO move lbaas-related methods into an lbaas provider. This class can then delegate to the appropriate v1 or v2 lbaas provider.
  *
  * TODO tokens will need to be regenerated if they are expired.
  */
