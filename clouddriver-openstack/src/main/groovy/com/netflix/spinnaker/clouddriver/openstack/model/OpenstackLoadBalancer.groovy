@@ -28,7 +28,7 @@ import org.openstack4j.model.network.ext.HealthMonitor
 import org.openstack4j.model.network.ext.LbPool
 
 @Canonical
-@JsonIgnoreProperties(['nameRegex','namePattern','descriptionRegex','descriptionPattern'])
+@JsonIgnoreProperties(['nameRegex','namePattern','portRegex','portPattern','createdRegex','createdPattern'])
 class OpenstackLoadBalancer implements LoadBalancer, Serializable, LoadBalancerResolver {
 
   String type = OpenstackCloudProvider.ID
@@ -63,6 +63,10 @@ class OpenstackLoadBalancer implements LoadBalancer, Serializable, LoadBalancerR
 
   Integer getInternalPort() {
     getInternalPort(description)
+  }
+
+  Long getCreatedTime() {
+    getCreatedTime(description)
   }
 
 }

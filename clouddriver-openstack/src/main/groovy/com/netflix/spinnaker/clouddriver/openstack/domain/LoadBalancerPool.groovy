@@ -23,33 +23,27 @@ import org.openstack4j.model.network.ext.LbPool
 @AutoClone
 @Canonical
 class LoadBalancerPool implements LoadBalancerResolver {
-  static final String POOL_BASE_NAME = 'pool'
-
   String id
   String name
-  String derivedName
   LoadBalancerProtocol protocol
   LoadBalancerMethod method
   String subnetId
   Integer internalPort
   String description
-
-  void setName(String name) {
-    this.name = name
-    this.derivedName = String.format("%s-%s-%d", name, POOL_BASE_NAME, System.currentTimeMillis())
-  }
+  Long createdTime
 
   void setInternalPort(Integer port) {
     this.internalPort = port
-    this.description = "internal_port=${internalPort}"
+    addToDescription(generateInternalPort(port))
+  }
+
+  void setCreatedTime(long time) {
+    this.createdTime = time
+    addToDescription(generateCreatedTime(createdTime))
   }
 
   boolean doesMethodMatch(String methodName) {
     method?.name() == methodName
-  }
-
-  boolean doesNameMatch(String name) {
-    this.name == getBaseName(name)
   }
 
   boolean doesInternalPortMatch(String currentDescription) {
@@ -57,6 +51,14 @@ class LoadBalancerPool implements LoadBalancerResolver {
   }
 
   boolean equals(LbPool lbPool) {
-    doesMethodMatch(lbPool.lbMethod?.name()) && doesNameMatch(lbPool.name) && doesInternalPortMatch(lbPool.description)
+    doesMethodMatch(lbPool.lbMethod?.name()) && this.name == lbPool.name && doesInternalPortMatch(lbPool.description)
+  }
+
+  void addToDescription(String value) {
+    if (this.description) {
+      this.description += ",$value"
+    } else {
+      this.description = value
+    }
   }
 }

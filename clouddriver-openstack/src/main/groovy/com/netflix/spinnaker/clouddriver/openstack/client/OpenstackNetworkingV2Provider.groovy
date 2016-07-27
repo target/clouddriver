@@ -18,6 +18,7 @@ package com.netflix.spinnaker.clouddriver.openstack.client
 
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackProviderException
 import com.netflix.spinnaker.clouddriver.openstack.domain.LoadBalancerPool
+import com.netflix.spinnaker.clouddriver.openstack.domain.LoadBalancerResolver
 import com.netflix.spinnaker.clouddriver.openstack.domain.PoolHealthMonitor
 import com.netflix.spinnaker.clouddriver.openstack.domain.VirtualIP
 import org.apache.commons.lang.StringUtils
@@ -36,15 +37,10 @@ import org.openstack4j.model.network.ext.Member
 import org.openstack4j.model.network.ext.Protocol
 import org.openstack4j.model.network.ext.Vip
 
-import java.util.regex.Matcher
-import java.util.regex.Pattern
-
-class OpenstackNetworkingV2Provider implements OpenstackNetworkingProvider, OpenstackRequestHandler, OpenstackIdentityAware {
+class OpenstackNetworkingV2Provider implements OpenstackNetworkingProvider, OpenstackRequestHandler, OpenstackIdentityAware, LoadBalancerResolver {
 
   final int minPort = 1
   final int maxPort = (1 << 16) - 1
-  final String lbDescriptionRegex = ".*internal_port=([0-9]+).*"
-  final Pattern lbDescriptionPattern = Pattern.compile(lbDescriptionRegex)
 
   OpenstackIdentityProvider identityProvider
 
@@ -94,7 +90,7 @@ class OpenstackNetworkingV2Provider implements OpenstackNetworkingProvider, Open
     handleRequest {
       getRegionClient(region).networking().loadbalancers().lbPool().create(
         Builders.lbPool()
-          .name(loadBalancerPool.derivedName)
+          .name(loadBalancerPool.name)
           .protocol(Protocol.forValue(loadBalancerPool.protocol?.name()))
           .lbMethod(LbMethod.forValue(loadBalancerPool.method?.name()))
           .subnetId(loadBalancerPool.subnetId)
@@ -109,7 +105,7 @@ class OpenstackNetworkingV2Provider implements OpenstackNetworkingProvider, Open
     handleRequest {
       getRegionClient(region).networking().loadbalancers().lbPool().update(loadBalancerPool.id,
         Builders.lbPoolUpdate()
-          .name(loadBalancerPool.derivedName)
+          .name(loadBalancerPool.name)
           .lbMethod(LbMethod.forValue(loadBalancerPool.method?.name()))
           .description(loadBalancerPool.description)
           .adminStateUp(Boolean.TRUE)
@@ -122,7 +118,7 @@ class OpenstackNetworkingV2Provider implements OpenstackNetworkingProvider, Open
     handleRequest {
       getRegionClient(region).networking().loadbalancers().vip().create(
         Builders.vip()
-          .name(virtualIP.derivedName)
+          .name(virtualIP.name)
           .subnetId(virtualIP.subnetId)
           .poolId(virtualIP.poolId)
           .protocol(Protocol.forValue(virtualIP.protocol?.name()))
@@ -137,7 +133,7 @@ class OpenstackNetworkingV2Provider implements OpenstackNetworkingProvider, Open
     handleRequest {
       // TODO - Currently only supporting updates to name ... Expanded to update SessionPersistence & connectionLimit
       getRegionClient(region).networking().loadbalancers().vip().update(virtualIP.id,
-        Builders.vipUpdate().name(virtualIP.derivedName).adminStateUp(Boolean.TRUE).build())
+        Builders.vipUpdate().name(virtualIP.name).adminStateUp(Boolean.TRUE).build())
     }
   }
 
@@ -251,11 +247,7 @@ class OpenstackNetworkingV2Provider implements OpenstackNetworkingProvider, Open
 
   @Override
   int getInternalLoadBalancerPort(LbPool pool) {
-    Matcher matcher = lbDescriptionPattern.matcher(pool.description)
-    int internalPort = 0
-    if (matcher.matches()) {
-      internalPort = matcher.group(1).toInteger()
-    }
+    int internalPort = getInternalPort(pool.description)
     if (internalPort < minPort || internalPort > maxPort) {
       throw new OpenstackProviderException("Internal pool port $internalPort is outside of the valid range.")
     }
