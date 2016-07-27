@@ -30,10 +30,16 @@ class LoadBalancerPool implements LoadBalancerResolver {
   String subnetId
   Integer internalPort
   String description
+  Long createdTime
 
   void setInternalPort(Integer port) {
     this.internalPort = port
-    this.description = "internal_port=${internalPort}"
+    addToDescription(generateInternalPort(port))
+  }
+
+  void setCreatedTime(long time) {
+    this.createdTime = time
+    addToDescription(generateCreatedTime(createdTime))
   }
 
   boolean doesMethodMatch(String methodName) {
@@ -46,5 +52,13 @@ class LoadBalancerPool implements LoadBalancerResolver {
 
   boolean equals(LbPool lbPool) {
     doesMethodMatch(lbPool.lbMethod?.name()) && this.name == lbPool.name && doesInternalPortMatch(lbPool.description)
+  }
+
+  void addToDescription(String value) {
+    if (this.description) {
+      this.description += ",$value"
+    } else {
+      this.description = value
+    }
   }
 }

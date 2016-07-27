@@ -32,9 +32,27 @@ class LoadBalancerResolverSpec extends Specification {
     result == expected
 
     where:
-    testCase    | description        | expected
-    'not found' | 'test'             | -1
-    'found'     | 'internal_port=20' | 20
-    'null'      | null               | -1
+    testCase    | description                        | expected
+    'not found' | 'test'                             | -1
+    'found'     | 'internal_port=20'                 | 20
+    'found'     | 'created_time=42,internal_port=20' | 20
+    'found'     | 'internal_port=20,created_time=42' | 20
+    'null'      | null                               | -1
+  }
+
+  def "get created time - #testCase"() {
+    when:
+    int result = resolver.getCreatedTime(description)
+
+    then:
+    result == expected
+
+    where:
+    testCase    | description                        | expected
+    'not found' | 'test'                             | -1
+    'found'     | 'created_time=42'                  | 42
+    'found'     | 'internal_port=20,created_time=42' | 42
+    'found'     | 'created_time=42,internal_port=20' | 42
+    'null'      | null                               | -1
   }
 }
