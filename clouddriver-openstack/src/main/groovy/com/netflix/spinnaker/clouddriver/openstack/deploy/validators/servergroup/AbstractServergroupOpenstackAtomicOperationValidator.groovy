@@ -17,14 +17,17 @@
 package com.netflix.spinnaker.clouddriver.openstack.deploy.validators.servergroup
 
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.OpenstackAtomicOperationDescription
+import com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergroup.ServerGroupParameters
+import com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergroup.ServerGroupParameters.Scaler
 import com.netflix.spinnaker.clouddriver.openstack.deploy.validators.AbstractOpenstackDescriptionValidator
 import com.netflix.spinnaker.clouddriver.openstack.deploy.validators.OpenstackAttributeValidator
-import com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergroup.ServerGroupParameters
 
 /**
  * This class adds validation for creating and cloning server groups.
  */
 abstract class AbstractServergroupOpenstackAtomicOperationValidator<T extends OpenstackAtomicOperationDescription> extends AbstractOpenstackDescriptionValidator<T> {
+
+  final String prefix = "serverGroupParameters"
 
   /**
    * Validate server group parameters.
@@ -33,7 +36,6 @@ abstract class AbstractServergroupOpenstackAtomicOperationValidator<T extends Op
    * @return
    */
   def validateServerGroup(OpenstackAttributeValidator validator, ServerGroupParameters parameters) {
-    String prefix = "serverGroupParameters"
     parameters.with {
       validator.validateNotEmpty(instanceType, "${prefix}.instanceType")
       validator.validateNotEmpty(image, "${prefix}.image")
@@ -45,6 +47,17 @@ abstract class AbstractServergroupOpenstackAtomicOperationValidator<T extends Op
       validator.validateNotEmpty(subnetId, "${prefix}.subnetId")
       validator.validateNotEmpty(poolId, "${prefix}.poolId")
       validator.validateNotEmpty(securityGroups, "${prefix}.securityGroups")
+      int maxAdjustment = (maxSize && minSize) ? maxSize - minSize : 0
+      ["scaleup":scaleup, "scaledown":scaledown].each { e -> validateScaler(validator, maxAdjustment, e.key, e.value) }
+    }
+  }
+
+  def validateScaler(OpenstackAttributeValidator validator, int maxAdjustment, String type, Scaler scaler) {
+    scaler?.with {
+      if (cooldown) validator.validatePositive(cooldown, "${prefix}.${type}.cooldown")
+      if (adjustment) validator.validateLessThanEqual(Math.abs(adjustment), maxAdjustment, "${prefix}.${type}.adjustment")
+      if (period) validator.validatePositive(period, "${prefix}.${type}.period")
+      if (threshold) validator.validatePositive(threshold, "${prefix}.${type}.threshold")
     }
   }
 
