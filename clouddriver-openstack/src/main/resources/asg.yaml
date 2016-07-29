@@ -41,7 +41,7 @@ parameters:
     default: 60
   scaleup_adjustment:
     type: number
-    description: Amount by which to change the instance count. Can be positive or negative
+    description: Amount by which to change the instance count. Must be positive
     default: 1
   scaleup_period:
     type: number
@@ -49,7 +49,7 @@ parameters:
     default: 60
   scaleup_threshold:
     type: number
-    description: threshold that causes the scaleup action to occur, if held for scaleup_period seconds
+    description: Threshold that causes the scaleup action to occur, if held for scaleup_period seconds
     default: 50
   scaledown_cooldown:
     type: number
@@ -57,7 +57,7 @@ parameters:
     default: 60
   scaledown_adjustment:
     type: number
-    description: Amount by which to change the instance count. Can be positive or negative
+    description: Amount by which to change the instance count. Must be negative
     default: -1
   scaledown_period:
     type: number
@@ -65,7 +65,7 @@ parameters:
     default: 600
   scaledown_threshold:
     type: number
-    description: threshold that causes the scaledown action to occur, if held for scaledown_period seconds
+    description: Threshold that causes the scaledown action to occur, if held for scaledown_period seconds
     default: 15
 resources:
   asg:
