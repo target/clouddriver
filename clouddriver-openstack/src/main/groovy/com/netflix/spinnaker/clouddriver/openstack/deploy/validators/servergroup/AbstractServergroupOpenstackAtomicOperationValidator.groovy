@@ -28,6 +28,8 @@ import com.netflix.spinnaker.clouddriver.openstack.deploy.validators.OpenstackAt
 abstract class AbstractServergroupOpenstackAtomicOperationValidator<T extends OpenstackAtomicOperationDescription> extends AbstractOpenstackDescriptionValidator<T> {
 
   final String prefix = "serverGroupParameters"
+  final String scaleupPrefix = "scaleup"
+  final String scaledownPrefix = "scaledown"
 
   /**
    * Validate server group parameters.
@@ -48,14 +50,14 @@ abstract class AbstractServergroupOpenstackAtomicOperationValidator<T extends Op
       validator.validateNotEmpty(poolId, "${prefix}.poolId")
       validator.validateNotEmpty(securityGroups, "${prefix}.securityGroups")
       int maxAdjustment = (maxSize && minSize) ? maxSize - minSize : 0
-      ["scaleup":scaleup, "scaledown":scaledown].each { e -> validateScaler(validator, maxAdjustment, e.key, e.value) }
+      [(scaleupPrefix):scaleup, (scaledownPrefix):scaledown].each { e -> validateScaler(validator, maxAdjustment, e.key, e.value) }
     }
   }
 
   def validateScaler(OpenstackAttributeValidator validator, int maxAdjustment, String type, Scaler scaler) {
     scaler?.with {
-      if ("scaleup" == type) validator.validatePositive(adjustment, "${prefix}.${type}.adjustment")
-      if ("scaledown" == type) validator.validateLessThanEqual(adjustment, -1, "${prefix}.${type}.adjustment")
+      if (scaleupPrefix == type) validator.validatePositive(adjustment, "${prefix}.${type}.adjustment")
+      if (scaledownPrefix == type) validator.validateLessThanEqual(adjustment, -1, "${prefix}.${type}.adjustment")
       if (cooldown) validator.validatePositive(cooldown, "${prefix}.${type}.cooldown")
       if (adjustment) validator.validateLessThanEqual(Math.abs(adjustment), maxAdjustment, "${prefix}.${type}.adjustment")
       if (period) validator.validatePositive(period, "${prefix}.${type}.period")

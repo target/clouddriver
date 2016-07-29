@@ -126,6 +126,22 @@ class ServerGroupParameters {
     }
 
     @JsonCreator
+    static String fromMeter(String meter) {
+      switch (meter) {
+        case CPU.meterName:
+          CPU.name().toLowerCase()
+          break
+        case NETWORK_INCOMING.meterName:
+          NETWORK_INCOMING.name().toLowerCase()
+          break
+        case NETWORK_OUTGOING.meterName:
+          NETWORK_OUTGOING.name().toLowerCase()
+          break
+        default:
+          throw new IllegalArgumentException("Invalid enum meter name: $meter")
+      }
+    }
+
     static AutoscalingType fromString(String value) {
       switch (value) {
         case CPU.toString():

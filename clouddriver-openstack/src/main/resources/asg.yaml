@@ -100,7 +100,7 @@ resources:
       auto_scaling_group_id: {get_resource: asg}
       cooldown: {get_param: scaledown_cooldown}
       scaling_adjustment: {get_param: scaledown_adjustment}
-  cpu_alarm_high:
+  meter_alarm_high:
     type: OS::Ceilometer::Alarm
     properties:
       description: Scale up if the average meter_name > scaleup_threshold for scaleup_period seconds
@@ -113,7 +113,7 @@ resources:
         - {get_attr: [web_server_scaleup_policy, alarm_url]}
       matching_metadata: {'metadata.user_metadata.stack': {get_param: "OS::stack_id"}}
       comparison_operator: gt
-  cpu_alarm_low:
+  meter_alarm_low:
     type: OS::Ceilometer::Alarm
     properties:
       description: Scale up if the average meter_name < scaledown_threshold for scaledown_period seconds
