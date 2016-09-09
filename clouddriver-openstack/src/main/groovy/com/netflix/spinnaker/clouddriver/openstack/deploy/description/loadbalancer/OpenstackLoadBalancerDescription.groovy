@@ -31,6 +31,8 @@ class OpenstackLoadBalancerDescription extends OpenstackAtomicOperationDescripti
   List<String> securityGroups
   List<Listener> listeners
   HealthMonitor healthMonitor
+  String defaultContainerName
+  List<String> sniContainerNames
 
   enum Algorithm {
     ROUND_ROBIN, LEAST_CONNECTIONS, SOURCE_IP
@@ -53,5 +55,4 @@ class OpenstackLoadBalancerDescription extends OpenstackAtomicOperationDescripti
     ListenerType externalProtocol
     Integer internalPort
   }
-
 }

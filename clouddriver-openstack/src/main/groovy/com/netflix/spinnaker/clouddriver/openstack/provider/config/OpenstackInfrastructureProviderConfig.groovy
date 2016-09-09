@@ -86,6 +86,7 @@ class OpenstackInfrastructureProviderConfig {
     allAccounts.each { OpenstackNamedAccountCredentials credentials ->
       if (!scheduledAccounts.contains(credentials.name)) {
         credentials.credentials.provider.allRegions.each { String region ->
+          /*
           newlyAddedAgents << new OpenstackInstanceCachingAgent(credentials, region, objectMapper)
           newlyAddedAgents << new OpenstackServerGroupCachingAgent(credentials, region, objectMapper, registry)
           newlyAddedAgents << new OpenstackSubnetCachingAgent(credentials, region, objectMapper)
@@ -95,6 +96,7 @@ class OpenstackInfrastructureProviderConfig {
           newlyAddedAgents << new OpenstackFloatingIPCachingAgent(credentials, region, objectMapper)
           newlyAddedAgents << new OpenstackLoadBalancerCachingAgent(credentials, region, objectMapper, registry)
           newlyAddedAgents << new OpenstackInstanceTypeCachingAgent(credentials, region, objectMapper)
+          */
         }
       }
     }

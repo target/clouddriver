@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.clouddriver.openstack.client
 
 import com.netflix.spinnaker.clouddriver.openstack.domain.HealthMonitor
+import org.openstack4j.model.barbican.Container
 import org.openstack4j.model.common.ActionResponse
 import org.openstack4j.model.network.ext.HealthMonitorV2
 import org.openstack4j.model.network.ext.LbPoolV2
@@ -86,9 +87,11 @@ interface OpenstackLoadBalancerProvider {
    * @param externalPort
    * @param description
    * @param loadBalancerId
+   * @param defaultTlsContainerRef
+   * @param sniContainerRefs
    * @return
    */
-  ListenerV2 createListener(final String region, final String name, final String externalProtocol, final Integer externalPort, final String description, final String loadBalancerId)
+  ListenerV2 createListener(final String region, final String name, final String externalProtocol, final Integer externalPort, final String description, final String loadBalancerId, final String defaultTlsContainerRef, final List<String> sniContainerRefs)
 
   /**
    * Retreives listener by id.
@@ -238,4 +241,12 @@ interface OpenstackLoadBalancerProvider {
    * @return
    */
   LoadBalancerV2StatusTree getLoadBalancerStatusTree(final String region, final String id)
+
+  /**
+   * Returns containers that have the specified named.
+   * @param region
+   * @param name
+   * @return Containers
+   */
+  List<Container> getContainersByName(final String region, final String name)
 }

@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.clouddriver.openstack.deploy.ops.loadbalancer
 
+import com.google.common.collect.Iterables
+import com.google.common.collect.Lists
 import com.google.common.collect.Sets
 import com.netflix.spinnaker.clouddriver.openstack.client.BlockingStatusChecker
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.loadbalancer.OpenstackLoadBalancerDescription
@@ -28,6 +30,7 @@ import com.netflix.spinnaker.clouddriver.openstack.domain.HealthMonitor
 import com.netflix.spinnaker.clouddriver.openstack.task.TaskStatusAware
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperation
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperations
+import org.openstack4j.model.barbican.Container
 import org.openstack4j.model.compute.FloatingIP
 import org.openstack4j.model.network.NetFloatingIP
 import org.openstack4j.model.network.Network
@@ -36,6 +39,11 @@ import org.openstack4j.model.network.ext.HealthMonitorV2
 import org.openstack4j.model.network.ext.LbPoolV2
 import org.openstack4j.model.network.ext.ListenerV2
 import org.openstack4j.model.network.ext.LoadBalancerV2
+import org.openstack4j.openstack.OSFactory
+
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Future
+import java.util.stream.Stream
 
 class UpsertOpenstackLoadBalancerAtomicOperation extends AbstractOpenstackLoadBalancerAtomicOperation implements AtomicOperation<Map>, TaskStatusAware {
   OpenstackLoadBalancerDescription description
@@ -61,6 +69,8 @@ class UpsertOpenstackLoadBalancerAtomicOperation extends AbstractOpenstackLoadBa
     LoadBalancerV2 resultLoadBalancer
 
     try {
+      Map<String, String> containerMap = this.validateAndResolveContainers(region)
+
       if (!this.description.id) {
         validatePeripherals(region, description.subnetId, description.networkId, description.securityGroups)
         resultLoadBalancer = createLoadBalancer(region, description.name, description.subnetId)
@@ -95,7 +105,7 @@ class UpsertOpenstackLoadBalancerAtomicOperation extends AbstractOpenstackLoadBa
       }
 
       if (listenersToAdd) {
-        addListenersAndPools(region, resultLoadBalancer.id, description.name, description.algorithm, listenersToAdd, description.healthMonitor)
+        addListenersAndPools(region, resultLoadBalancer.id, description.name, description.algorithm, listenersToAdd, description.healthMonitor, containerMap)
       }
 
       if (listenersToUpdate) {
@@ -137,6 +147,45 @@ class UpsertOpenstackLoadBalancerAtomicOperation extends AbstractOpenstackLoadBa
       provider.getSecurityGroup(region, it) // Throws resource not found exception.
     }
   }
+
+  protected Map<String, String> validateAndResolveContainers(final String region) {
+    Map<String, String> result = [:]
+
+    List<String> containerNames = []
+
+    //TODO - Need to fully understand which of these items are required
+    if (description.defaultContainerName) {
+      containerNames << description.defaultContainerName
+    }
+    if (description.sniContainerNames) {
+      containerNames.addAll(description.sniContainerNames)
+    }
+    OSFactory.enableHttpLoggingFilter(true)
+
+    if (containerNames) {
+      Map<String, Future<List<Container>>> resourceMap = containerNames.collectEntries { String name ->
+        [(name): CompletableFuture.supplyAsync {
+          provider.getContainersByName(region, name)
+        }.exceptionally { t -> [] }]
+      }
+
+      CompletableFuture.allOf(resourceMap.values().flatten() as CompletableFuture[]).join()
+
+      resourceMap.collectEntries(result) {
+        List<Container> containers = it.value.get()
+        if (containers && !containers.isEmpty()) {
+          [it.key, containers.first().containerReference]
+        }
+      }
+
+      if (result.size() != containerNames.size()) {
+        throw new OpenstackResourceNotFoundException("Containers provided are invalid ${containerNames}")
+      }
+    }
+
+    result
+  }
+
   /**
    * Creates a load balancer in given subnet.
    * @param region
@@ -209,12 +258,14 @@ class UpsertOpenstackLoadBalancerAtomicOperation extends AbstractOpenstackLoadBa
    * @param listeners
    * @return
    */
-  protected void addListenersAndPools(String region, String loadBalancerId, String name, Algorithm algorithm, Map<String, Listener> listeners, HealthMonitor healthMonitor) {
+  protected void addListenersAndPools(String region, String loadBalancerId, String name, Algorithm algorithm, Map<String, Listener> listeners, HealthMonitor healthMonitor, Map<String, String> containerMap) {
     BlockingStatusChecker blockingStatusChecker = createBlockingActiveStatusChecker(region, loadBalancerId)
     listeners?.each { String key, Listener currentListener ->
       task.updateStatus UPSERT_LOADBALANCER_PHASE, "Creating listener $name in ${region}"
       ListenerV2 listener = blockingStatusChecker.execute {
-        provider.createListener(region, name, currentListener.externalProtocol.name(), currentListener.externalPort, key, loadBalancerId)
+        String defaultContainerRef = containerMap.get(description.defaultContainerName)
+        List<String> sniContainerRefs = description?.sniContainerNames?.collect { containerMap.get(it) }
+        provider.createListener(region, name, currentListener.externalProtocol.name(), currentListener.externalPort, key, loadBalancerId, defaultContainerRef, sniContainerRefs)
       }
       task.updateStatus UPSERT_LOADBALANCER_PHASE, "Created listener $name in ${region}"
       task.updateStatus UPSERT_LOADBALANCER_PHASE, "Creating pool $name in ${region}"

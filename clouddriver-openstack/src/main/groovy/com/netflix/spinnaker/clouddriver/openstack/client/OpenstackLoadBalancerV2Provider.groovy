@@ -22,6 +22,7 @@ import com.netflix.spinnaker.clouddriver.openstack.domain.HealthMonitor
 import com.netflix.spinnaker.clouddriver.openstack.domain.LoadBalancerResolver
 import org.apache.commons.lang.StringUtils
 import org.openstack4j.api.Builders
+import org.openstack4j.model.barbican.Container
 import org.openstack4j.model.common.ActionResponse
 import org.openstack4j.model.network.ext.HealthMonitorType
 import org.openstack4j.model.network.ext.HealthMonitorV2
@@ -98,7 +99,7 @@ class OpenstackLoadBalancerV2Provider implements OpenstackLoadBalancerProvider, 
   }
 
   @Override
-  ListenerV2 createListener(final String region, final String name, final String externalProtocol, final Integer externalPort, final String description, final String loadBalancerId) {
+  ListenerV2 createListener(final String region, final String name, final String externalProtocol, final Integer externalPort, final String description, final String loadBalancerId, final String defaultTlsContainerRef, final List<String> sniContainerRefs) {
     handleRequest {
       getRegionClient(region).networking().lbaasV2().listener().create(Builders.listenerV2()
         .name(name)
@@ -106,6 +107,8 @@ class OpenstackLoadBalancerV2Provider implements OpenstackLoadBalancerProvider, 
         .loadBalancerId(loadBalancerId)
         .protocolPort(externalPort)
         .protocol(ListenerProtocol.forValue(externalProtocol))
+        .defaultTlsContainerRef(defaultTlsContainerRef)
+        .sniContainerRefs(sniContainerRefs)
         .adminStateUp(Boolean.TRUE)
         .build())
     }
@@ -276,11 +279,17 @@ class OpenstackLoadBalancerV2Provider implements OpenstackLoadBalancerProvider, 
     }
   }
 
-
-
+  @Override
   LoadBalancerV2StatusTree getLoadBalancerStatusTree(final String region, final String id) {
     handleRequest {
       getRegionClient(region).networking().lbaasV2().loadbalancer().statusTree(id)
+    }
+  }
+
+  @Override
+  List<Container> getContainersByName(final String region, final String name) {
+    handleRequest {
+      getRegionClient(region).barbican().containers().list(name)
     }
   }
 }
