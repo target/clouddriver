@@ -16,8 +16,6 @@
 
 package com.netflix.spinnaker.clouddriver.openstack.deploy.ops.loadbalancer
 
-import com.google.common.collect.Iterables
-import com.google.common.collect.Lists
 import com.google.common.collect.Sets
 import com.netflix.spinnaker.clouddriver.openstack.client.BlockingStatusChecker
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.loadbalancer.OpenstackLoadBalancerDescription
@@ -37,13 +35,12 @@ import org.openstack4j.model.network.Network
 import org.openstack4j.model.network.Port
 import org.openstack4j.model.network.ext.HealthMonitorV2
 import org.openstack4j.model.network.ext.LbPoolV2
+import org.openstack4j.model.network.ext.ListenerProtocol
 import org.openstack4j.model.network.ext.ListenerV2
 import org.openstack4j.model.network.ext.LoadBalancerV2
-import org.openstack4j.openstack.OSFactory
 
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
-import java.util.stream.Stream
 
 class UpsertOpenstackLoadBalancerAtomicOperation extends AbstractOpenstackLoadBalancerAtomicOperation implements AtomicOperation<Map>, TaskStatusAware {
   OpenstackLoadBalancerDescription description
@@ -69,7 +66,7 @@ class UpsertOpenstackLoadBalancerAtomicOperation extends AbstractOpenstackLoadBa
     LoadBalancerV2 resultLoadBalancer
 
     try {
-      Map<String, String> containerMap = this.validateAndResolveContainers(region)
+      Map<String, String> containerMap = this.validateAndResolveContainers(region, description.defaultContainerName, description.sniContainerNames)
 
       if (!this.description.id) {
         validatePeripherals(region, description.subnetId, description.networkId, description.securityGroups)
@@ -109,7 +106,7 @@ class UpsertOpenstackLoadBalancerAtomicOperation extends AbstractOpenstackLoadBa
       }
 
       if (listenersToUpdate) {
-        updateListenersAndPools(region, resultLoadBalancer.id, description.algorithm, listenersToUpdate.values(), description.healthMonitor)
+        updateListenersAndPools(region, resultLoadBalancer.id, description.algorithm, listenersToUpdate.values(), description.healthMonitor, description.defaultContainerName)
       }
 
       updateFloatingIp(region, description.networkId, resultLoadBalancer.vipPortId)
@@ -148,19 +145,17 @@ class UpsertOpenstackLoadBalancerAtomicOperation extends AbstractOpenstackLoadBa
     }
   }
 
-  protected Map<String, String> validateAndResolveContainers(final String region) {
+  protected Map<String, String> validateAndResolveContainers(final String region, final String defaultContainerName, final List<String> sniContainerNames) {
     Map<String, String> result = [:]
 
-    List<String> containerNames = []
+    Set<String> containerNames = Sets.newHashSet()
 
-    //TODO - Need to fully understand which of these items are required
-    if (description.defaultContainerName) {
-      containerNames << description.defaultContainerName
+    if (defaultContainerName) {
+      containerNames << defaultContainerName
     }
-    if (description.sniContainerNames) {
+    if (sniContainerNames) {
       containerNames.addAll(description.sniContainerNames)
     }
-    OSFactory.enableHttpLoggingFilter(true)
 
     if (containerNames) {
       Map<String, Future<List<Container>>> resourceMap = containerNames.collectEntries { String name ->
@@ -178,8 +173,9 @@ class UpsertOpenstackLoadBalancerAtomicOperation extends AbstractOpenstackLoadBa
         }
       }
 
-      if (result.size() != containerNames.size()) {
-        throw new OpenstackResourceNotFoundException("Containers provided are invalid ${containerNames}")
+      if (result.keySet() == containerNames) {
+        Set<String> invalidContainers = Sets.difference(containerNames, result.keySet())
+        throw new OpenstackResourceNotFoundException("Containers provided are invalid ${invalidContainers}")
       }
     }
 
@@ -284,10 +280,14 @@ class UpsertOpenstackLoadBalancerAtomicOperation extends AbstractOpenstackLoadBa
    * @param loadBalancerId
    * @param listeners
    */
-  protected void updateListenersAndPools(String region, String loadBalancerId, Algorithm algorithm, Collection<ListenerV2> listeners, HealthMonitor healthMonitor) {
+  protected void updateListenersAndPools(String region, String loadBalancerId, Algorithm algorithm, Collection<ListenerV2> listeners, HealthMonitor healthMonitor, String defaultContainerRef) {
     BlockingStatusChecker blockingStatusChecker = createBlockingActiveStatusChecker(region, loadBalancerId)
 
     listeners?.each { ListenerV2 currentListener ->
+      if (currentListener.protocol == ListenerProtocol.TERMINATED_HTTPS && (currentListener.defaultTlsContainerRef != defaultContainerRef)) {
+        blockingStatusChecker.execute { provider.updateListener(region, currentListener.id, defaultContainerRef) }
+      }
+
       LbPoolV2 lbPool = provider.getPool(region, currentListener.defaultPoolId)
       if (lbPool.lbMethod.name() != algorithm.name()) {
         task.updateStatus UPSERT_LOADBALANCER_PHASE, "Updating pool $lbPool.name in ${region} ..."

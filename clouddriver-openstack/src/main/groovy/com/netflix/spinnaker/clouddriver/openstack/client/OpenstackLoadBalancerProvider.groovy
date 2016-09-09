@@ -102,6 +102,15 @@ interface OpenstackLoadBalancerProvider {
   ListenerV2 getListener(final String region, final String id)
 
   /**
+   * Updates a listeners container reference.
+   * @param region
+   * @param listenerId
+   * @param defaultTlsContainerRef
+   * @return
+   */
+  ListenerV2 updateListener(final String region, final String listenerId, final String defaultTlsContainerRef)
+
+  /**
    * Removes listener by id.
    * @param region
    * @param id

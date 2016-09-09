@@ -115,6 +115,14 @@ class OpenstackLoadBalancerV2Provider implements OpenstackLoadBalancerProvider, 
   }
 
   @Override
+  ListenerV2 updateListener(final String region, final String listenerId, final String defaultTlsContainerRef) {
+    handleRequest {
+      getRegionClient(region).networking().lbaasV2().listener().update(listenerId, Builders.listenerV2Update().defaultTlsContainerRef(defaultTlsContainerRef)
+        .build())
+    }
+  }
+
+  @Override
   ListenerV2 getListener(final String region, final String id) {
     ListenerV2 result = handleRequest {
       getRegionClient(region).networking().lbaasV2().listener().get(id)
