@@ -22,21 +22,18 @@ import com.netflix.spinnaker.clouddriver.openstack.client.OpenstackClientProvide
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergroup.OpenstackServerGroupAtomicOperationDescription
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackOperationException
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackProviderException
+import com.netflix.spinnaker.clouddriver.openstack.task.TaskStatusAware
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperation
 import groovy.util.logging.Slf4j
 import org.openstack4j.model.heat.Stack
 
 @Slf4j
-class DestroyOpenstackAtomicOperation implements AtomicOperation<Void> {
+class DestroyOpenstackAtomicOperation implements AtomicOperation<Void>, TaskStatusAware {
   private final String BASE_PHASE = "DESTROY"
   OpenstackServerGroupAtomicOperationDescription description;
 
   DestroyOpenstackAtomicOperation(OpenstackServerGroupAtomicOperationDescription description) {
     this.description = description
-  }
-
-  protected static Task getTask() {
-    TaskRepository.threadLocalTask.get()
   }
 
   /*

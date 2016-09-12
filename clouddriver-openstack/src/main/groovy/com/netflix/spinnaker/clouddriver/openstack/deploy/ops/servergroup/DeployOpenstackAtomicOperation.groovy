@@ -26,6 +26,7 @@ import com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergrou
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackOperationException
 import com.netflix.spinnaker.clouddriver.openstack.deploy.ops.StackPoolMemberAware
 import com.netflix.spinnaker.clouddriver.openstack.domain.LoadBalancerResolver
+import com.netflix.spinnaker.clouddriver.openstack.task.TaskStatusAware
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperation
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperations
 import org.apache.commons.io.FileUtils
@@ -49,7 +50,7 @@ import java.util.concurrent.ConcurrentHashMap
  * but again it would need to honor the expected parameters.
  * We could use the freeform details field to store the template string.
  */
-class DeployOpenstackAtomicOperation implements AtomicOperation<DeploymentResult>, StackPoolMemberAware, LoadBalancerResolver {
+class DeployOpenstackAtomicOperation implements AtomicOperation<DeploymentResult>, StackPoolMemberAware, LoadBalancerResolver, TaskStatusAware {
 
   private final String BASE_PHASE = "DEPLOY"
 
@@ -59,10 +60,6 @@ class DeployOpenstackAtomicOperation implements AtomicOperation<DeploymentResult
 
   DeployOpenstackAtomicOperation(DeployOpenstackAtomicOperationDescription description) {
     this.description = description
-  }
-
-  protected static Task getTask() {
-    TaskRepository.threadLocalTask.get()
   }
 
   /*

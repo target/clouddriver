@@ -19,7 +19,7 @@ package com.netflix.spinnaker.clouddriver.openstack.deploy.ops.instance
 import com.netflix.spinnaker.clouddriver.data.task.Task
 import com.netflix.spinnaker.clouddriver.data.task.TaskRepository
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.instance.OpenstackInstancesDescription
-
+import com.netflix.spinnaker.clouddriver.openstack.task.TaskStatusAware
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperation
 import groovy.util.logging.Slf4j
 
@@ -27,17 +27,13 @@ import groovy.util.logging.Slf4j
  * Reboots an Openstack instance.
  */
 @Slf4j
-class RebootOpenstackInstancesAtomicOperation implements AtomicOperation<Void> {
+class RebootOpenstackInstancesAtomicOperation implements AtomicOperation<Void>, TaskStatusAware {
 
   private final String BASE_PHASE = "REBOOT_INSTANCES"
   OpenstackInstancesDescription description
 
   RebootOpenstackInstancesAtomicOperation(OpenstackInstancesDescription description) {
     this.description = description
-  }
-
-  protected static Task getTask() {
-    TaskRepository.threadLocalTask.get()
   }
 
   /*

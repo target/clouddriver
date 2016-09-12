@@ -22,19 +22,16 @@ import com.netflix.spinnaker.clouddriver.openstack.client.OpenstackClientProvide
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergroup.OpenstackServerGroupAtomicOperationDescription
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergroup.ServerGroupParameters
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackOperationException
+import com.netflix.spinnaker.clouddriver.openstack.task.TaskStatusAware
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperation
 import org.openstack4j.model.heat.Stack
 
-abstract class AbstractStackUpdateOpenstackAtomicOperation implements AtomicOperation<Void> {
+abstract class AbstractStackUpdateOpenstackAtomicOperation implements AtomicOperation<Void>, TaskStatusAware {
 
   OpenstackServerGroupAtomicOperationDescription description
 
   AbstractStackUpdateOpenstackAtomicOperation(OpenstackServerGroupAtomicOperationDescription description) {
     this.description = description
-  }
-
-  protected static Task getTask() {
-    TaskRepository.threadLocalTask.get()
   }
 
   /**

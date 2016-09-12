@@ -22,6 +22,7 @@ import com.netflix.spinnaker.clouddriver.openstack.deploy.description.securitygr
 import com.netflix.spinnaker.clouddriver.openstack.client.OpenstackClientProvider
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackOperationException
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackProviderException
+import com.netflix.spinnaker.clouddriver.openstack.task.TaskStatusAware
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperation
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperations
 import groovy.util.logging.Slf4j
@@ -37,17 +38,13 @@ import org.openstack4j.model.compute.SecGroupExtension
  * be managed in Openstack itself, not through Spinnaker.
  */
 @Slf4j
-class UpsertOpenstackSecurityGroupAtomicOperation implements AtomicOperation<Void> {
+class UpsertOpenstackSecurityGroupAtomicOperation implements AtomicOperation<Void>, TaskStatusAware {
 
   private final String BASE_PHASE = "UPSERT_SECURITY_GROUP"
   UpsertOpenstackSecurityGroupDescription description
 
   UpsertOpenstackSecurityGroupAtomicOperation(UpsertOpenstackSecurityGroupDescription description) {
     this.description = description
-  }
-
-  protected static Task getTask() {
-    TaskRepository.threadLocalTask.get()
   }
 
   /*

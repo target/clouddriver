@@ -59,7 +59,7 @@ class UpsertOpenstackLoadBalancerAtomicOperationSpec extends Specification imple
   @Shared
   String account = 'test'
   @Shared
-  String opName = UPSERT_LOADBALANCER_PHASE
+  String opName = UpsertOpenstackLoadBalancerAtomicOperation.UPSERT_LOADBALANCER_PHASE
   @Shared
   Throwable openstackProviderException = new OpenstackProviderException('foo')
   @Shared

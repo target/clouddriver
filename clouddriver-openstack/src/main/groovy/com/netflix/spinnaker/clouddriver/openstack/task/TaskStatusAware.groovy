@@ -19,11 +19,11 @@ import com.netflix.spinnaker.clouddriver.data.task.Task
 import com.netflix.spinnaker.clouddriver.data.task.TaskRepository
 
 /**
- * TODO - Refeactor operations to use trait and remove boilerplate logic.
+ * Adds {@code getTask} to a class.
+ *
+ * Intended to remove boilerplate in AtomicOperations.
  */
 trait TaskStatusAware {
-  final String UPSERT_LOADBALANCER_PHASE = 'UPSERT_LOAD_BALANCER'
-
   Task getTask() {
     TaskRepository.threadLocalTask.get()
   }

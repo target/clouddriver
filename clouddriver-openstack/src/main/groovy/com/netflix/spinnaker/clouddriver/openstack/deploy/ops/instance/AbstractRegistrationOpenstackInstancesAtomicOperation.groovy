@@ -22,6 +22,7 @@ import com.netflix.spinnaker.clouddriver.openstack.client.OpenstackClientProvide
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.instance.OpenstackInstancesRegistrationDescription
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackOperationException
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackProviderException
+import com.netflix.spinnaker.clouddriver.openstack.task.TaskStatusAware
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperation
 import org.openstack4j.model.network.ext.ListenerV2
 import org.openstack4j.model.network.ext.LoadBalancerV2
@@ -29,7 +30,7 @@ import org.openstack4j.model.network.ext.LoadBalancerV2
 /**
  * Base class that will handle both load balancer registration and deregistration.
  */
-abstract class AbstractRegistrationOpenstackInstancesAtomicOperation implements AtomicOperation<Void> {
+abstract class AbstractRegistrationOpenstackInstancesAtomicOperation implements AtomicOperation<Void>, TaskStatusAware {
 
   abstract String getBasePhase() // Either 'REGISTER' or 'DEREGISTER'.
   abstract Boolean getAction() // Either 'true' or 'false', for Register and Deregister respectively.
@@ -40,10 +41,6 @@ abstract class AbstractRegistrationOpenstackInstancesAtomicOperation implements 
 
   AbstractRegistrationOpenstackInstancesAtomicOperation(OpenstackInstancesRegistrationDescription description) {
     this.description = description
-  }
-
-  protected static Task getTask() {
-    TaskRepository.threadLocalTask.get()
   }
 
   @Override

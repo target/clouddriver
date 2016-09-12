@@ -38,6 +38,8 @@ import org.openstack4j.model.network.ext.ListenerV2
 import org.openstack4j.model.network.ext.LoadBalancerV2
 
 class UpsertOpenstackLoadBalancerAtomicOperation extends AbstractOpenstackLoadBalancerAtomicOperation implements AtomicOperation<Map>, TaskStatusAware {
+  static final String UPSERT_LOADBALANCER_PHASE = 'UPSERT_LOAD_BALANCER'
+
   OpenstackLoadBalancerDescription description
 
   UpsertOpenstackLoadBalancerAtomicOperation(OpenstackLoadBalancerDescription description) {

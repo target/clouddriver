@@ -24,21 +24,18 @@ import com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergrou
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergroup.DeployOpenstackAtomicOperationDescription
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackOperationException
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergroup.ServerGroupParameters
+import com.netflix.spinnaker.clouddriver.openstack.task.TaskStatusAware
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperation
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperations
 import org.openstack4j.model.heat.Stack
 
-class CloneOpenstackAtomicOperation implements AtomicOperation<DeploymentResult>{
+class CloneOpenstackAtomicOperation implements AtomicOperation<DeploymentResult>, TaskStatusAware {
   private static final String BASE_PHASE = "CLONE_SERVER_GROUP"
 
   CloneOpenstackAtomicOperationDescription description
 
   CloneOpenstackAtomicOperation(CloneOpenstackAtomicOperationDescription description) {
     this.description = description
-  }
-
-  private static Task getTask() {
-    TaskRepository.threadLocalTask.get()
   }
 
   /*

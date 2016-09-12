@@ -21,10 +21,11 @@ import com.netflix.spinnaker.clouddriver.data.task.TaskRepository
 import com.netflix.spinnaker.clouddriver.openstack.client.OpenstackClientProvider
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.servergroup.OpenstackServerGroupAtomicOperationDescription
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackOperationException
+import com.netflix.spinnaker.clouddriver.openstack.task.TaskStatusAware
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperation
 import org.openstack4j.model.heat.Stack
 
-abstract class AbstractEnableDisableOpenstackAtomicOperation implements AtomicOperation<Void> {
+abstract class AbstractEnableDisableOpenstackAtomicOperation implements AtomicOperation<Void>, TaskStatusAware {
   abstract boolean isDisable()
 
   abstract String getPhaseName()
@@ -37,10 +38,6 @@ abstract class AbstractEnableDisableOpenstackAtomicOperation implements AtomicOp
 
   AbstractEnableDisableOpenstackAtomicOperation(OpenstackServerGroupAtomicOperationDescription description) {
     this.description = description
-  }
-
-  protected static Task getTask() {
-    TaskRepository.threadLocalTask.get()
   }
 
   @Override

@@ -20,6 +20,7 @@ package com.netflix.spinnaker.clouddriver.openstack.deploy.ops.securitygroup
 import com.netflix.spinnaker.clouddriver.data.task.Task
 import com.netflix.spinnaker.clouddriver.data.task.TaskRepository
 import com.netflix.spinnaker.clouddriver.openstack.deploy.description.securitygroup.DeleteOpenstackSecurityGroupDescription
+import com.netflix.spinnaker.clouddriver.openstack.task.TaskStatusAware
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperation
 
 /**
@@ -27,17 +28,13 @@ import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperation
  *
  * Delete will fail in Openstack if the security group is associated to an instance.
  */
-class DeleteOpenstackSecurityGroupAtomicOperation implements AtomicOperation<Void> {
+class DeleteOpenstackSecurityGroupAtomicOperation implements AtomicOperation<Void>, TaskStatusAware {
 
   private final String BASE_PHASE = 'DELETE_SECURITY_GROUP'
   DeleteOpenstackSecurityGroupDescription description
 
   DeleteOpenstackSecurityGroupAtomicOperation(DeleteOpenstackSecurityGroupDescription description) {
     this.description = description
-  }
-
-  protected static Task getTask() {
-    TaskRepository.threadLocalTask.get()
   }
 
   /*
