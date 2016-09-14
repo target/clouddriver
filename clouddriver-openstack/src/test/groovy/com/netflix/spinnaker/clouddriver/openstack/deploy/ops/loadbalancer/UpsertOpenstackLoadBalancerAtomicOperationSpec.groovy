@@ -84,6 +84,7 @@ class UpsertOpenstackLoadBalancerAtomicOperationSpec extends Specification imple
       name = 'name'
       subnetId = UUID.randomUUID()
       algorithm = Algorithm.ROUND_ROBIN
+      defaultContainerName = 'test-container'
       listeners = [new Listener(externalPort: 80, externalProtocol: 'HTTP', internalPort: 8080)]
     }
 
@@ -93,17 +94,18 @@ class UpsertOpenstackLoadBalancerAtomicOperationSpec extends Specification imple
       getId() >> '123'
       getVipPortId() >> '321'
     }
+    Map<String, String> containerMap = [(description.defaultContainerName): 'http://localhost:8080/uuid']
 
     when:
     Map result = operation.operate([])
 
     then:
+    1 * operation.validateAndResolveContainers(region, description.defaultContainerName, description.sniContainerNames) >> containerMap
     1 * operation.validatePeripherals(region, description.subnetId, description.networkId, description.securityGroups) >> {
     }
     1 * operation.createLoadBalancer(region, description.name, description.subnetId) >> loadBalancer
     1 * operation.buildListenerMap(region, loadBalancer) >> [:]
-    1 * operation.addListenersAndPools(region, loadBalancer.id, description.name, description.algorithm, _, description.healthMonitor) >> {
-    }
+    1 * operation.addListenersAndPools(region, loadBalancer.id, description.name, description.algorithm, _, description.healthMonitor, containerMap, description.defaultContainerName, description.sniContainerNames) >> { }
     1 * operation.updateFloatingIp(region, description.networkId, loadBalancer.vipPortId)
     1 * operation.updateSecurityGroups(region, loadBalancer.vipPortId, description.securityGroups)
     0 * operation.updateServerGroup(opName, region, loadBalancer.id)
@@ -119,10 +121,12 @@ class UpsertOpenstackLoadBalancerAtomicOperationSpec extends Specification imple
       id = UUID.randomUUID()
       subnetId = UUID.randomUUID()
       algorithm = Algorithm.ROUND_ROBIN
+      defaultContainerName = 'test-container'
       listeners = [new Listener(externalPort: 80, externalProtocol: 'HTTP', internalPort: 8080)]
     }
 
     and:
+    Map<String, String> containerMap = [(description.defaultContainerName): 'http://localhost:8080/uuid']
     def operation = Spy(UpsertOpenstackLoadBalancerAtomicOperation, constructorArgs: [description])
     LoadBalancerV2 loadBalancer = Stub(LoadBalancerV2) {
       getId() >> '123'
@@ -134,12 +138,12 @@ class UpsertOpenstackLoadBalancerAtomicOperationSpec extends Specification imple
     Map result = operation.operate([])
 
     then:
+    1 * operation.validateAndResolveContainers(region, description.defaultContainerName, description.sniContainerNames) >> containerMap
     0 * operation.validatePeripherals(region, description.subnetId, description.networkId, description.securityGroups) >> {
     }
     1 * provider.getLoadBalancer(region, description.id) >> loadBalancer
     1 * operation.buildListenerMap(region, loadBalancer) >> ['HTTPS:443:HTTPS:8181': listenerV2]
-    1 * operation.addListenersAndPools(region, loadBalancer.id, description.name, description.algorithm, _, description.healthMonitor) >> {
-    }
+    1 * operation.addListenersAndPools(region, loadBalancer.id, description.name, description.algorithm, _, description.healthMonitor, containerMap, description.defaultContainerName, description.sniContainerNames) >> { }
     1 * operation.deleteLoadBalancerPeripherals(opName, region, loadBalancer.id, _ as Collection) >> {}
     1 * operation.updateFloatingIp(region, description.networkId, loadBalancer.vipPortId)
     1 * operation.updateSecurityGroups(region, loadBalancer.vipPortId, description.securityGroups)
@@ -155,10 +159,12 @@ class UpsertOpenstackLoadBalancerAtomicOperationSpec extends Specification imple
       name = 'name'
       id = UUID.randomUUID()
       subnetId = UUID.randomUUID()
+      defaultContainerName = 'test-container'
       listeners = [new Listener(externalPort: 80, externalProtocol: 'HTTP', internalPort: 8080)]
     }
 
     and:
+    Map<String, String> containerMap = [(description.defaultContainerName): 'http://localhost:8080/uuid']
     def operation = Spy(UpsertOpenstackLoadBalancerAtomicOperation, constructorArgs: [description])
     LoadBalancerV2 loadBalancer = Stub(LoadBalancerV2) {
       getId() >> '123'
@@ -170,12 +176,12 @@ class UpsertOpenstackLoadBalancerAtomicOperationSpec extends Specification imple
     Map result = operation.operate([])
 
     then:
+    1 * operation.validateAndResolveContainers(region, description.defaultContainerName, description.sniContainerNames) >> containerMap
     0 * operation.validatePeripherals(region, description.subnetId, description.networkId, description.securityGroups) >> {
     }
     1 * provider.getLoadBalancer(region, description.id) >> loadBalancer
     1 * operation.buildListenerMap(region, loadBalancer) >> ['HTTP:80:8080': listenerV2]
-    1 * operation.updateListenersAndPools(region, loadBalancer.id, description.algorithm, _, description.healthMonitor) >> {
-    }
+    1 * operation.updateListenersAndPools(region, loadBalancer.id, description.algorithm, _, description.healthMonitor, containerMap[description.defaultContainerName]) >> { }
     1 * operation.updateFloatingIp(region, description.networkId, loadBalancer.vipPortId)
     1 * operation.updateSecurityGroups(region, loadBalancer.vipPortId, description.securityGroups)
     0 * operation.updateServerGroup(opName, region, loadBalancer.id)
@@ -191,9 +197,11 @@ class UpsertOpenstackLoadBalancerAtomicOperationSpec extends Specification imple
       id = UUID.randomUUID()
       subnetId = UUID.randomUUID()
       listeners = [new Listener(externalPort: 80, externalProtocol: 'HTTP', internalPort: 8080)]
+      defaultContainerName = 'test-container'
     }
 
     and:
+    Map<String, String> containerMap = [(description.defaultContainerName):'http://localhost:8080/uuid']
     def operation = Spy(UpsertOpenstackLoadBalancerAtomicOperation, constructorArgs: [description])
     LoadBalancerV2 loadBalancer = Stub(LoadBalancerV2) {
       getId() >> '123'
@@ -205,9 +213,10 @@ class UpsertOpenstackLoadBalancerAtomicOperationSpec extends Specification imple
     operation.operate([])
 
     then:
+    1 * operation.validateAndResolveContainers(region, description.defaultContainerName, description.sniContainerNames) >> containerMap
     1 * provider.getLoadBalancer(region, description.id) >> loadBalancer
     1 * operation.buildListenerMap(region, loadBalancer) >> ['HTTP:80:8080': listenerV2]
-    1 * operation.updateListenersAndPools(region, loadBalancer.id, description.algorithm, _, description.healthMonitor) >> {
+    1 * operation.updateListenersAndPools(region, loadBalancer.id, description.algorithm, _, description.healthMonitor, containerMap[description.defaultContainerName]) >> {
       throw openstackProviderException
     }
 
@@ -386,22 +395,26 @@ class UpsertOpenstackLoadBalancerAtomicOperationSpec extends Specification imple
     Algorithm algorithm = Algorithm.ROUND_ROBIN
     String loadBalancerId = UUID.randomUUID()
     String key = 'HTTP:80:8080'
+    String defaultContainerName = 'test-container'
+    String sniContainerName = 'test-sni-container'
+    List<String> sniContainerNames = [sniContainerName]
 
     and:
     Listener listener = new Listener(externalProtocol: 'HTTP', externalPort: 80, internalPort: 8080)
     ListenerV2 newListener = Mock(ListenerV2)
     LbPoolV2 newLbPool = Mock(LbPoolV2)
     HealthMonitor healthMonitor = Mock(HealthMonitor)
+    Map<String, String> containerMap = [(defaultContainerName): 'http://localhost:8080/uuid']
 
     and:
     def operation = Spy(UpsertOpenstackLoadBalancerAtomicOperation, constructorArgs: [description])
 
     when:
-    operation.addListenersAndPools(region, loadBalancerId, name, algorithm, [(key): listener], healthMonitor)
+    operation.addListenersAndPools(region, loadBalancerId, name, algorithm, [(key): listener], healthMonitor, containerMap, defaultContainerName, sniContainerNames)
 
     then:
     1 * operation.createBlockingActiveStatusChecker(region, loadBalancerId) >> blockingClientAdapter
-    1 * provider.createListener(region, name, listener.externalProtocol.name(), listener.externalPort, key, loadBalancerId) >> newListener
+    1 * provider.createListener(region, name, listener.externalProtocol.name(), listener.externalPort, key, loadBalancerId, containerMap[defaultContainerName], sniContainerNames.collect { containerMap[it] }) >> newListener
     //todo: is this right? just doing listener.externalProtocol.name()
     1 * provider.createPool(region, name, listener.externalProtocol.name(), algorithm.name(), newListener.id) >> newLbPool
     1 * operation.updateHealthMonitor(region, loadBalancerId, newLbPool, healthMonitor) >> {}
@@ -409,6 +422,7 @@ class UpsertOpenstackLoadBalancerAtomicOperationSpec extends Specification imple
 
   def "update listeners and pools - change algorithm"() {
     given:
+    String defaultContainerRef = 'http://localhost:8080/uuid'
     Algorithm algorithm = Algorithm.ROUND_ROBIN
     String loadBalancerId = UUID.randomUUID()
     ListenerV2 listener = Mock(ListenerV2) {
@@ -422,7 +436,7 @@ class UpsertOpenstackLoadBalancerAtomicOperationSpec extends Specification imple
     def operation = Spy(UpsertOpenstackLoadBalancerAtomicOperation, constructorArgs: [description])
 
     when:
-    operation.updateListenersAndPools(region, loadBalancerId, algorithm, [listener], healthMonitor)
+    operation.updateListenersAndPools(region, loadBalancerId, algorithm, [listener], healthMonitor, defaultContainerRef)
 
     then:
     1 * operation.createBlockingActiveStatusChecker(region, loadBalancerId) >> blockingClientAdapter
@@ -433,8 +447,11 @@ class UpsertOpenstackLoadBalancerAtomicOperationSpec extends Specification imple
     1 * operation.updateHealthMonitor(region, loadBalancerId, lbPool, healthMonitor) >> {}
   }
 
+  //TODO - Add update listener test cases - test update and test non-update
+
   def "update listeners and pools - no updates"() {
     given:
+    String defaultContainerRef = 'http://localhost:8080/uuid'
     Algorithm algorithm = Algorithm.ROUND_ROBIN
     String loadBalancerId = UUID.randomUUID()
     ListenerV2 listener = Mock(ListenerV2) {
@@ -448,7 +465,7 @@ class UpsertOpenstackLoadBalancerAtomicOperationSpec extends Specification imple
     def operation = Spy(UpsertOpenstackLoadBalancerAtomicOperation, constructorArgs: [description])
 
     when:
-    operation.updateListenersAndPools(region, loadBalancerId, algorithm, [listener], healthMonitor)
+    operation.updateListenersAndPools(region, loadBalancerId, algorithm, [listener], healthMonitor, defaultContainerRef)
 
     then:
     1 * operation.createBlockingActiveStatusChecker(region, loadBalancerId) >> blockingClientAdapter
@@ -672,4 +689,6 @@ class UpsertOpenstackLoadBalancerAtomicOperationSpec extends Specification imple
     and:
     thrown(OpenstackResourceNotFoundException)
   }
+
+  //TODO - Validate test cases.
 }

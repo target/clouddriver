@@ -102,11 +102,11 @@ class UpsertOpenstackLoadBalancerAtomicOperation extends AbstractOpenstackLoadBa
       }
 
       if (listenersToAdd) {
-        addListenersAndPools(region, resultLoadBalancer.id, description.name, description.algorithm, listenersToAdd, description.healthMonitor, containerMap)
+        addListenersAndPools(region, resultLoadBalancer.id, description.name, description.algorithm, listenersToAdd, description.healthMonitor, containerMap, description.defaultContainerName, description.sniContainerNames)
       }
 
       if (listenersToUpdate) {
-        updateListenersAndPools(region, resultLoadBalancer.id, description.algorithm, listenersToUpdate.values(), description.healthMonitor, description.defaultContainerName)
+        updateListenersAndPools(region, resultLoadBalancer.id, description.algorithm, listenersToUpdate.values(), description.healthMonitor, containerMap[description.defaultContainerName])
       }
 
       updateFloatingIp(region, description.networkId, resultLoadBalancer.vipPortId)
@@ -254,13 +254,13 @@ class UpsertOpenstackLoadBalancerAtomicOperation extends AbstractOpenstackLoadBa
    * @param listeners
    * @return
    */
-  protected void addListenersAndPools(String region, String loadBalancerId, String name, Algorithm algorithm, Map<String, Listener> listeners, HealthMonitor healthMonitor, Map<String, String> containerMap) {
+  protected void addListenersAndPools(String region, String loadBalancerId, String name, Algorithm algorithm, Map<String, Listener> listeners, HealthMonitor healthMonitor, Map<String, String> containerMap, String defaultContainerName, Collection<String> sniContainerNames) {
     BlockingStatusChecker blockingStatusChecker = createBlockingActiveStatusChecker(region, loadBalancerId)
     listeners?.each { String key, Listener currentListener ->
       task.updateStatus UPSERT_LOADBALANCER_PHASE, "Creating listener $name in ${region}"
       ListenerV2 listener = blockingStatusChecker.execute {
-        String defaultContainerRef = containerMap.get(description.defaultContainerName)
-        List<String> sniContainerRefs = description?.sniContainerNames?.collect { containerMap.get(it) }
+        String defaultContainerRef = containerMap.get(defaultContainerName)
+        List<String> sniContainerRefs = sniContainerNames?.collect { containerMap.get(it) }
         provider.createListener(region, name, currentListener.externalProtocol.name(), currentListener.externalPort, key, loadBalancerId, defaultContainerRef, sniContainerRefs)
       }
       task.updateStatus UPSERT_LOADBALANCER_PHASE, "Created listener $name in ${region}"

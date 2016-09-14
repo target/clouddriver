@@ -164,6 +164,8 @@ class OpenstackLoadbalancerV2ClientProviderSpec extends OpenstackClientProviderS
     Integer externalPort = 80
     String description = 'HTTP:80:HTTP:8080'
     String loadBalancerId = UUID.randomUUID().toString()
+    String defaultContainerRef = 'http://localhost:8080/123'
+    List<String> sniContainerRefs = ['http://localhost:8080/124']
 
     and:
     NetworkingService networkingService = Mock(NetworkingService)
@@ -172,7 +174,7 @@ class OpenstackLoadbalancerV2ClientProviderSpec extends OpenstackClientProviderS
     ListenerV2 expected = Mock(ListenerV2)
 
     when:
-    ListenerV2 result = provider.createListener(region, name, externalProtocol, externalPort, description, loadBalancerId)
+    ListenerV2 result = provider.createListener(region, name, externalProtocol, externalPort, description, loadBalancerId, defaultContainerRef, sniContainerRefs)
 
     then:
     1 * mockClient.networking() >> networkingService
@@ -192,6 +194,8 @@ class OpenstackLoadbalancerV2ClientProviderSpec extends OpenstackClientProviderS
     Integer externalPort = 80
     String description = 'HTTP:80:HTTP:8080'
     String loadBalancerId = UUID.randomUUID().toString()
+    String defaultContainerRef = 'http://localhost:8080/123'
+    List<String> sniContainerRefs = ['http://localhost:8080/124']
 
     and:
     NetworkingService networkingService = Mock(NetworkingService)
@@ -199,7 +203,7 @@ class OpenstackLoadbalancerV2ClientProviderSpec extends OpenstackClientProviderS
     ListenerV2Service listenerV2Service = Mock(ListenerV2Service)
 
     when:
-    provider.createListener(region, name, externalProtocol, externalPort, description, loadBalancerId)
+    provider.createListener(region, name, externalProtocol, externalPort, description, loadBalancerId, defaultContainerRef, sniContainerRefs)
 
     then:
     1 * mockClient.networking() >> networkingService
