@@ -1,27 +1,27 @@
 heat_template_version: 2016-04-08
-description: A load balanced server for Spinnaker
+description: A load balanced server for Spinnaker.
 parameters:
   flavor:
     type: string
-    description: flavor used by the servers
+    description: Flavor used by the servers.
   image:
     type: string
-    description: Image used for servers
+    description: Image used for servers.
   metadata:
     type: json
-    description: server instance metadata
+    description: Server instance metadata.
   network_id:
     type: string
     description: Network used by each server. Retained for auditing purposes.
   security_groups:
     type: comma_delimited_list
-    description: security groups associate to each server
+    description: Security groups associate to each server.
   subnet_id:
     type: string
-    description: Subnet used to allocate a fixed IP for each server
+    description: Subnet used to allocate a fixed IP for each server.
   user_data:
     type: string
-    description: raw base64-encoded string that will execute upon server boot, if cloud-init is installed
+    description: Raw base64-encoded string that will execute upon server boot, if cloud-init is installed.
 resources:
   server:
     type: OS::Nova::Server
