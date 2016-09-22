@@ -40,6 +40,11 @@ import org.openstack4j.model.network.ext.LbPoolV2
 import org.openstack4j.model.network.ext.ListenerProtocol
 import org.openstack4j.model.network.ext.ListenerV2
 import org.openstack4j.model.network.ext.LoadBalancerV2
+import org.openstack4j.model.network.ext.LoadBalancerV2StatusTree
+import org.openstack4j.model.network.ext.status.LbPoolV2Status
+import org.openstack4j.model.network.ext.status.ListenerV2Status
+import org.openstack4j.model.network.ext.status.LoadBalancerV2Status
+import org.openstack4j.model.network.ext.status.MemberV2Status
 import org.openstack4j.openstack.networking.domain.ext.ListItem
 import spock.lang.Shared
 import spock.lang.Specification
@@ -47,6 +52,7 @@ import spock.lang.Specification
 import java.util.concurrent.CompletableFuture
 
 import static com.netflix.spinnaker.clouddriver.openstack.cache.Keys.Namespace.FLOATING_IPS
+import static com.netflix.spinnaker.clouddriver.openstack.cache.Keys.Namespace.INSTANCES
 import static com.netflix.spinnaker.clouddriver.openstack.cache.Keys.Namespace.LOAD_BALANCERS
 
 class OpenstackLoadBalancerCachingAgentSpec extends Specification {
@@ -82,13 +88,13 @@ class OpenstackLoadBalancerCachingAgentSpec extends Specification {
     }
   }
 
-  void "test load data" () {
+  void "test load data"() {
     given:
     ProviderCache providerCache = Mock(ProviderCache)
     CacheResult cacheResult = Mock(CacheResult)
     GroovyMock(CompletableFuture, global: true)
     CompletableFuture.supplyAsync(_) >> Mock(CompletableFuture)
-    CompletableFuture.allOf(_ as CompletableFuture,_ as CompletableFuture,_ as CompletableFuture,_ as CompletableFuture) >> Mock(CompletableFuture)
+    CompletableFuture.allOf(_ as CompletableFuture, _ as CompletableFuture, _ as CompletableFuture, _ as CompletableFuture) >> Mock(CompletableFuture)
 
     when:
     CacheResult result = cachingAgent.loadData(providerCache)
@@ -108,7 +114,7 @@ class OpenstackLoadBalancerCachingAgentSpec extends Specification {
     CompletableFuture f = Mock(CompletableFuture)
     GroovyMock(CompletableFuture, global: true)
     CompletableFuture.supplyAsync(_) >> f
-    CompletableFuture.allOf(_ as CompletableFuture,_ as CompletableFuture,_ as CompletableFuture,_ as CompletableFuture) >> Mock(CompletableFuture)
+    CompletableFuture.allOf(_ as CompletableFuture, _ as CompletableFuture, _ as CompletableFuture, _ as CompletableFuture) >> Mock(CompletableFuture)
     Throwable throwable = new OpenstackProviderException(ActionResponse.actionFailed('test', 1))
 
     when:
@@ -132,6 +138,7 @@ class OpenstackLoadBalancerCachingAgentSpec extends Specification {
     String ipId = UUID.randomUUID().toString()
     String lbName = 'myapp-lb'
     String subnetId = UUID.randomUUID().toString()
+    String ipv6 = 'fd16:3966:18cc:0:f816:3eff:fe88:9004'
     LoadBalancerV2 loadBalancer = Mock(LoadBalancerV2) {
       it.id >> { loadBalancerId }
       it.name >> { lbName }
@@ -152,14 +159,38 @@ class OpenstackLoadBalancerCachingAgentSpec extends Specification {
     HealthMonitorV2 healthMonitor = Mock(HealthMonitorV2)
     Map<String, Object> lbAttributes = Mock(Map)
     String lbKey = Keys.getLoadBalancerKey(lbName, loadBalancerId, account, region)
+    MemberV2Status memberV2Status = Mock(MemberV2Status) {
+      it.address >> { ipv6 }
+      it.operatingStatus >> { 'ONLINE' }
+    }
+    LbPoolV2Status lbPoolV2Status = Mock(LbPoolV2Status) {
+      it.memberStatuses >> { [memberV2Status] }
+    }
+    ListenerV2Status listenerV2Status = Mock(ListenerV2Status) {
+      it.lbPoolV2Statuses >> { [lbPoolV2Status] }
+    }
+    LoadBalancerV2Status loadBalancerV2Status = Mock(LoadBalancerV2Status) {
+      it.listenerStatuses >> { [listenerV2Status] }
+    }
+    LoadBalancerV2StatusTree loadBalancerV2StatusTree = Mock(LoadBalancerV2StatusTree) {
+      it.loadBalancerV2Status >> { loadBalancerV2Status }
+    }
 
     and:
-    List<String> ipKeys = [Keys.getFloatingIPKey(ipId, account, region)]
-    Map<String, Object> ipAttributes = [instanceId:ipId]
+    List<String> instanceKeys = [Keys.getInstanceKey(ipId, account, region)]
+    Map<String, Object> ipAttributes = [instanceId: ipId]
     CacheData ipCacheData = Mock(CacheData) {
       it.attributes >> { ipAttributes }
     }
     Collection<CacheData> ipCacheDataList = [ipCacheData]
+
+    and:
+    List<String> ipKeys = [Keys.getFloatingIPKey(ipId, account, region)]
+    Map<String, Object> instanceAttributes = [instanceId: ipId, ipv6: ipv6]
+    CacheData instanceCacheData = Mock(CacheData) {
+      it.attributes >> { instanceAttributes }
+    }
+    Collection<CacheData> instanceCacheDataList = [instanceCacheData]
 
     and:
     OpenstackLoadBalancer openstackLoadBalancer = Mock(OpenstackLoadBalancer)
@@ -167,7 +198,8 @@ class OpenstackLoadBalancerCachingAgentSpec extends Specification {
                                                     Set<ListenerV2> listeners,
                                                     LbPoolV2 pools,
                                                     HealthMonitorV2 hm,
-                                                    String a, String r -> openstackLoadBalancer }
+                                                    String a, String r -> openstackLoadBalancer
+    }
 
     when:
     CacheResult result = cachingAgent.buildCacheResult(providerCache, [loadBalancer].toSet(),
@@ -175,6 +207,9 @@ class OpenstackLoadBalancerCachingAgentSpec extends Specification {
       new CacheResultBuilder(startTime: System.currentTimeMillis()))
 
     then:
+    1 * provider.getLoadBalancerStatusTree(region, loadBalancerId) >> loadBalancerV2StatusTree
+    1 * providerCache.filterIdentifiers(INSTANCES.ns, Keys.getInstanceKey('*', account, region)) >> instanceKeys
+    1 * providerCache.getAll(INSTANCES.ns, instanceKeys, _ as RelationshipCacheFilter) >> instanceCacheDataList
     1 * providerCache.filterIdentifiers(FLOATING_IPS.ns, Keys.getFloatingIPKey('*', account, region)) >> ipKeys
     1 * providerCache.getAll(FLOATING_IPS.ns, ipKeys, _ as RelationshipCacheFilter) >> ipCacheDataList
 
@@ -212,11 +247,11 @@ class OpenstackLoadBalancerCachingAgentSpec extends Specification {
     result == null
 
     where:
-    testCase                  | data
-    'empty data'              | [:]
-    'missing loadBalancerName'| [account: account, region: region]
-    'wrong account'           | [loadBalancerName: 'name', account: 'abc', region: region]
-    'wrong region'            | [loadBalancerName: 'name', account: account, region: 'abc']
+    testCase                   | data
+    'empty data'               | [:]
+    'missing loadBalancerName' | [account: account, region: region]
+    'wrong account'            | [loadBalancerName: 'name', account: 'abc', region: region]
+    'wrong region'             | [loadBalancerName: 'name', account: account, region: 'abc']
   }
 
   void "test handle on demand no resource"() {
@@ -237,7 +272,7 @@ class OpenstackLoadBalancerCachingAgentSpec extends Specification {
     1 * cachingAgent.processOnDemandCache(cacheResult, objectMapper, _, providerCache, loadBalancerKey)
 
     and:
-    result.cacheResult ==  cacheResult
+    result.cacheResult == cacheResult
     result.evictions.get(LOAD_BALANCERS.ns) == [loadBalancerKey]
   }
 
@@ -290,7 +325,7 @@ class OpenstackLoadBalancerCachingAgentSpec extends Specification {
     result.evictions.get(LOAD_BALANCERS.ns).isEmpty()
   }
 
-  void 'test pending on demand requests' () {
+  void 'test pending on demand requests'() {
     given:
     ProviderCache providerCache = Mock(ProviderCache)
     Collection<Map> maps = Mock(Collection)
