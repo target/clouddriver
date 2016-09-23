@@ -122,7 +122,7 @@ class OpenstackLoadBalancerCachingAgent extends AbstractOpenstackCachingAgent im
                                Set<ListenerV2> listeners,
                                Set<LbPoolV2> pools,
                                Set<HealthMonitorV2> healthMonitors,
-    Map<String, LoadBalancerV2StatusTree> statusTreeMap,
+                               Map<String, LoadBalancerV2StatusTree> statusTreeMap,
                                CacheResultBuilder cacheResultBuilder) {
     loadBalancers?.each { loadBalancer ->
       String loadBalancerKey = Keys.getLoadBalancerKey(loadBalancer.name, loadBalancer.id, accountName, region)
