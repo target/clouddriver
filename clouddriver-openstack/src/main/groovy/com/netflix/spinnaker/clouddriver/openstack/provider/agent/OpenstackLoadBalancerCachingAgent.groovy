@@ -92,6 +92,11 @@ class OpenstackLoadBalancerCachingAgent extends AbstractOpenstackCachingAgent im
     Future<Set<? extends LoadBalancerV2>> loadBalancers = CompletableFuture.supplyAsync {
       clientProvider.getLoadBalancers(region)?.toSet()
     }
+    Future<Map<String, ? extends LoadBalancerV2StatusTree>> statusTrees = loadBalancers.thenApplyAsync { lbs ->
+      lbs.collectEntries { lb ->
+        [(lb.id): clientProvider.getLoadBalancerStatusTree(region, lb.id)]
+      }
+    }
     Future<Set<? extends ListenerV2>> listeners = CompletableFuture.supplyAsync {
       clientProvider.getListeners(region)?.toSet()
     }
@@ -101,14 +106,14 @@ class OpenstackLoadBalancerCachingAgent extends AbstractOpenstackCachingAgent im
     Future<Set<? extends HealthMonitorV2>> healthMonitors = CompletableFuture.supplyAsync {
       clientProvider.getHealthMonitors(region)?.toSet()
     }
-    CompletableFuture.allOf(loadBalancers, listeners, pools, healthMonitors).join()
+    CompletableFuture.allOf(loadBalancers, listeners, pools, healthMonitors, statusTrees).join()
 
     List<String> loadBalancerKeys = loadBalancers.get().collect {
       Keys.getLoadBalancerKey(it.name, it.id, accountName, region)
     }
 
     buildLoadDataCache(providerCache, loadBalancerKeys) { CacheResultBuilder cacheResultBuilder ->
-      buildCacheResult(providerCache, loadBalancers.get(), listeners.get(), pools.get(), healthMonitors.get(), cacheResultBuilder)
+      buildCacheResult(providerCache, loadBalancers.get(), listeners.get(), pools.get(), healthMonitors.get(), statusTrees.get(), cacheResultBuilder)
     }
   }
 
@@ -117,6 +122,7 @@ class OpenstackLoadBalancerCachingAgent extends AbstractOpenstackCachingAgent im
                                Set<ListenerV2> listeners,
                                Set<LbPoolV2> pools,
                                Set<HealthMonitorV2> healthMonitors,
+    Map<String, LoadBalancerV2StatusTree> statusTreeMap,
                                CacheResultBuilder cacheResultBuilder) {
     loadBalancers?.each { loadBalancer ->
       String loadBalancerKey = Keys.getLoadBalancerKey(loadBalancer.name, loadBalancer.id, accountName, region)
@@ -144,9 +150,7 @@ class OpenstackLoadBalancerCachingAgent extends AbstractOpenstackCachingAgent im
         List<OpenstackLoadBalancerHealth> healths = []
         List<String> instanceKeys = []
 
-        LoadBalancerV2StatusTree loadBalancerV2StatusTree = clientProvider.getLoadBalancerStatusTree(region, loadBalancer.id)
-
-        Map<String, String> memberStatusMap = loadBalancerV2StatusTree?.loadBalancerV2Status?.listenerStatuses?.collectEntries { ListenerV2Status listenerStatus ->
+        Map<String, String> memberStatusMap = statusTreeMap?.get(loadBalancer.id)?.loadBalancerV2Status?.listenerStatuses?.collectEntries { ListenerV2Status listenerStatus ->
           listenerStatus.lbPoolV2Statuses?.collectEntries { LbPoolV2Status poolStatus ->
             poolStatus.memberStatuses?.collectEntries { MemberV2Status memberStatus ->
               [memberStatus.address, memberStatus.operatingStatus]
@@ -238,6 +242,7 @@ class OpenstackLoadBalancerCachingAgent extends AbstractOpenstackCachingAgent im
       Set<ListenerV2> listeners = [].toSet()
       Set<LbPoolV2> pools = [].toSet()
       Set<HealthMonitorV2> healthMonitors = [].toSet()
+      Map<String, LoadBalancerV2StatusTree> statusMap = [:]
       String loadBalancerKey = Keys.getLoadBalancerKey(loadBalancerName, '*', accountName, region)
 
       if (loadBalancer) {
@@ -257,10 +262,11 @@ class OpenstackLoadBalancerCachingAgent extends AbstractOpenstackCachingAgent im
           }
         }
         loadBalancerKey = Keys.getLoadBalancerKey(loadBalancerName, loadBalancer.id, accountName, region)
+        statusMap[loadBalancer.id] = clientProvider.getLoadBalancerStatusTree(region, loadBalancer.id)
       }
 
       CacheResult cacheResult = metricsSupport.transformData {
-        buildCacheResult(providerCache, loadBalancers, listeners, pools, healthMonitors, new CacheResultBuilder(startTime: Long.MAX_VALUE))
+        buildCacheResult(providerCache, loadBalancers, listeners, pools, healthMonitors, statusMap, new CacheResultBuilder(startTime: Long.MAX_VALUE))
       }
 
       String namespace = LOAD_BALANCERS.ns
