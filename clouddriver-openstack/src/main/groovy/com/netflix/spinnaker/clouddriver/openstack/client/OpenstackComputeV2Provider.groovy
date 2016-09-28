@@ -37,6 +37,13 @@ public class OpenstackComputeV2Provider implements OpenstackComputeProvider, Ope
   }
 
   @Override
+  Flavor getFlavor(String region, String flavorName) {
+    handleRequest {
+      getRegionClient(region).compute().flavors().list().find { it.name == flavorName }
+    }
+  }
+
+  @Override
   List<? extends Server> getInstances(String region) {
     handleRequest {
       getRegionClient(region).compute().servers().list()
