@@ -27,6 +27,7 @@ import com.netflix.spinnaker.clouddriver.openstack.OpenstackCloudProvider
 import groovy.transform.Canonical
 import groovy.transform.builder.Builder
 
+//TODO drmaas we should probably create a view class for this.
 @Builder
 @Canonical
 class OpenstackServerGroup implements ServerGroup, Serializable {
@@ -34,7 +35,7 @@ class OpenstackServerGroup implements ServerGroup, Serializable {
   String name
   String region
   Set<String> zones
-  Set<OpenstackInstance> instances
+  Set<OpenstackInstance.View> instances
   Set health
   Map<String, Object> image // Represented as map instead of OpenstackImage for convenience.
   Map<String, Object> launchConfig
@@ -47,6 +48,7 @@ class OpenstackServerGroup implements ServerGroup, Serializable {
   String subnetId
   Map<String, Object> advancedConfig = [:]
   Map<String, String> tags
+  boolean discovery
 
   @Override
   Boolean isDisabled() { // Because groovy isn't smart enough to generate this method :-(

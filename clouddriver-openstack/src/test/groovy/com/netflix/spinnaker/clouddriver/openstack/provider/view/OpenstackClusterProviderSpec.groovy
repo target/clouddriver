@@ -24,6 +24,7 @@ import com.netflix.spinnaker.clouddriver.model.ServerGroup
 import com.netflix.spinnaker.clouddriver.openstack.OpenstackCloudProvider
 import com.netflix.spinnaker.clouddriver.openstack.cache.Keys
 import com.netflix.spinnaker.clouddriver.openstack.model.OpenstackCluster
+import com.netflix.spinnaker.clouddriver.openstack.model.OpenstackInstance
 import com.netflix.spinnaker.clouddriver.openstack.model.OpenstackLoadBalancer
 import com.netflix.spinnaker.clouddriver.openstack.model.OpenstackServerGroup
 import org.mockito.internal.util.collections.Sets
@@ -336,8 +337,8 @@ class OpenstackClusterProviderSpec extends Specification {
     Map<String, Collection<String>> relationships = Mock(Map)
     Collection<String> instanceKeys = Mock(Collection)
     Map<String, Object> attributes = [account: account, name: 'name', region: 'region']
-    Instance instance = Mock(Instance)
-    Set<Instance> instances = [instance].toSet()
+    OpenstackInstance instance = Mock(OpenstackInstance)
+    Set<OpenstackInstance> instances = [instance].toSet()
     String zone = 'zone1'
 
     when:

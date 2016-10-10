@@ -16,21 +16,17 @@
 
 package com.netflix.spinnaker.clouddriver.openstack.model
 
-import com.google.common.collect.Sets
 import com.netflix.spinnaker.clouddriver.model.Cluster
 import com.netflix.spinnaker.clouddriver.openstack.OpenstackCloudProvider
-import groovy.transform.EqualsAndHashCode
+import groovy.transform.Canonical
 
-@EqualsAndHashCode
+//TODO drmaas we should probably create a view class for this.
+@Canonical
 class OpenstackCluster implements Cluster, Serializable {
   String accountName
   String name
-  Set<OpenstackServerGroup> serverGroups
-  Set<OpenstackLoadBalancer> loadBalancers
+  Set<OpenstackServerGroup> serverGroups = [].toSet()
+  Set<OpenstackLoadBalancer> loadBalancers = [].toSet()
   String type = OpenstackCloudProvider.ID
 
-  OpenstackCluster() {
-    this.serverGroups = Sets.newConcurrentHashSet()
-    this.loadBalancers = Sets.newConcurrentHashSet()
-  }
 }

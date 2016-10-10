@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.cats.cache.Cache
 import com.netflix.spinnaker.cats.cache.CacheData
 import com.netflix.spinnaker.cats.cache.RelationshipCacheFilter
+import com.netflix.spinnaker.clouddriver.consul.provider.ConsulProviderUtils
 import com.netflix.spinnaker.clouddriver.model.Cluster
 import com.netflix.spinnaker.clouddriver.model.ClusterProvider
 import com.netflix.spinnaker.clouddriver.model.ServerGroup
@@ -151,6 +152,19 @@ class OpenstackClusterProvider implements ClusterProvider<OpenstackCluster> {
 
       // Add zones from instances to server group
       serverGroup.zones = serverGroup?.instances?.collect { it.zone }?.toSet()
+    }
+
+    // Disabled status for Consul.
+    def consulNodes = serverGroup.instances?.collect { it.consulNode } ?: []
+    def consulDiscoverable = ConsulProviderUtils.consulServerGroupDiscoverable(consulNodes)
+    if (consulDiscoverable) {
+      // If the server group is disabled (members are disabled or there are no load balancers), but Consul isn't,
+      //  we say the server group is disabled and discoverable.
+      // If the server group isn't disabled, but Consul is, we say the server group is not disabled (can be reached via load balancer).
+      // If the server group and Consul are both disabled, the server group remains disabled.
+      // If the server group and Consul are both not disabled, the server group is not disabled.
+      serverGroup.disabled &= ConsulProviderUtils.serverGroupDisabled(consulNodes)
+      serverGroup.discovery = true
     }
 
     serverGroup
