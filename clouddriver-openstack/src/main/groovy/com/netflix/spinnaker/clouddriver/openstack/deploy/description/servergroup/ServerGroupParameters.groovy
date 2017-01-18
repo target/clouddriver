@@ -51,6 +51,7 @@ class ServerGroupParameters {
   String sourceUserData
   Map<String, String> tags
   String asgResourceFilename
+  int diskSize
 
   static final ObjectMapper objectMapper = new ObjectMapper()
 
@@ -78,7 +79,8 @@ class ServerGroupParameters {
       source_user_data     : sourceUserData ?: null,
       tags                 : objectMapper.writeValueAsString(tags ?: [:]) ?: null,
       user_data            : rawUserData ?: null,
-      asg_resource_filename: asgResourceFilename ?: ServerGroupConstants.SUBTEMPLATE_FILE
+      asg_resource_filename: asgResourceFilename ?: ServerGroupConstants.SUBTEMPLATE_FILE,
+      disk_size            : diskSize ? Integer.toString(diskSize) : '40'
     ]
   }
 
@@ -110,7 +112,8 @@ class ServerGroupParameters {
       tags: unescapePythonUnicodeJsonMap(params.get('tags') ?: '{}'),
       sourceUserDataType: params.get('source_user_data_type'),
       sourceUserData: params.get('source_user_data'),
-      asgResourceFilename: params.get('asg_resource_filename')
+      asgResourceFilename: params.get('asg_resource_filename'),
+      diskSize: params.get('disk_size')?.toInteger() ?: 40
     )
   }
 

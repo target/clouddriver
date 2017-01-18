@@ -26,6 +26,7 @@ import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackOpe
 import com.netflix.spinnaker.clouddriver.openstack.deploy.exception.OpenstackProviderException
 import com.netflix.spinnaker.clouddriver.openstack.security.OpenstackCredentials
 import com.netflix.spinnaker.clouddriver.openstack.security.OpenstackNamedAccountCredentials
+import org.openstack4j.model.compute.Flavor
 import org.openstack4j.model.heat.Stack
 import org.openstack4j.model.network.Subnet
 import org.openstack4j.model.network.ext.ListenerV2
@@ -63,6 +64,7 @@ class DeployOpenstackAtomicOperationSpec extends Specification {
   def mockItem
   def mockSubnet
   def tags
+  def mockFlavor
 
   def setupSpec() {
     TaskRepository.threadLocalTask.set(Mock(Task))
@@ -87,6 +89,9 @@ class DeployOpenstackAtomicOperationSpec extends Specification {
     mockSubnet = Mock(Subnet)
     mockSubnet.networkId >> { '1234' }
     tags = [lbId]
+    mockFlavor = Mock(Flavor) {
+      it.name >> { 'name' }
+    }
   }
 
   def "should deploy a heat stack"() {
@@ -102,6 +107,7 @@ class DeployOpenstackAtomicOperationSpec extends Specification {
     1 * provider.getLoadBalancer(region, lbId) >> mockLb
     1 * provider.getListener(region, listenerId) >> mockListener
     1 * provider.getSubnet(region, subnetId) >> mockSubnet
+    1 * provider.getFlavor('region', 'm1.small') >> mockFlavor
     1 * provider.deploy(region, createdStackName, _ as String, _ as Map<String,String>, serverGroupParams, _ as Boolean, _ as Long, tags)
     noExceptionThrown()
   }
@@ -123,6 +129,7 @@ class DeployOpenstackAtomicOperationSpec extends Specification {
     1 * provider.getLoadBalancer(region, lbId) >> mockLb
     1 * provider.getListener(region, listenerId) >> mockListener
     1 * provider.getSubnet(region, subnetId) >> mockSubnet
+    1 * provider.getFlavor('region', 'm1.small') >> mockFlavor
     1 * provider.deploy(region, newStackName, _ as String, _ as Map<String,String>, serverGroupParams, _ as Boolean, _ as Long, tags)
     noExceptionThrown()
   }
@@ -151,6 +158,7 @@ class DeployOpenstackAtomicOperationSpec extends Specification {
     1 * provider.getLoadBalancer(region, lbId) >> mockLb
     1 * provider.getListener(region, listenerId) >> mockListener
     1 * provider.getSubnet(region, subnetId) >> mockSubnet
+    1 * provider.getFlavor('region', 'm1.small') >> mockFlavor
     1 * provider.deploy(region, createdStackName, _ as String, _ as Map<String,String>, scaledServerGroupParams, _ as Boolean, _ as Long, tags)
     noExceptionThrown()
   }
@@ -169,6 +177,7 @@ class DeployOpenstackAtomicOperationSpec extends Specification {
     1 * provider.getLoadBalancer(region, lbId) >> mockLb
     1 * provider.getListener(region, listenerId) >> mockListener
     1 * provider.getSubnet(region, subnetId) >> mockSubnet
+    1 * provider.getFlavor('region', 'm1.small') >> mockFlavor
     1 * provider.deploy(region, createdStackName, _ as String, _ as Map<String,String>, serverGroupParams, _ as Boolean, _ as Long, tags) >> { throw throwable }
     Throwable actual = thrown(OpenstackOperationException)
     actual.cause == throwable

@@ -1,6 +1,9 @@
 heat_template_version: 2016-04-08
 description: An auto-scaled server for Spinnaker without any load balancer association.
 parameters:
+  disk_size:
+    type: number
+    description: Desired instance disk size, derived from the flavor
   flavor:
     type: string
     description: Flavor used by the servers.
@@ -26,8 +29,12 @@ resources:
   server:
     type: OS::Nova::Server
     properties:
+      block_device_mapping_v2:
+        - boot_index: 0
+          delete_on_termination: true
+          image_id: {get_param: image}
+          volume_size: {get_param: disk_size}
       flavor: {get_param: flavor}
-      image: {get_param: image}
       metadata: {get_param: metadata}
       networks:
         - subnet: {get_param: subnet_id}

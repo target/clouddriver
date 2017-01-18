@@ -66,7 +66,8 @@ class OpenstackOrchestrationV1ClientProviderSpec extends OpenstackClientProvider
       tags: ['foo':'bar'],
       sourceUserDataType: 'Text',
       sourceUserData: 'echo foobar',
-      asgResourceFilename: asgResourceFileName
+      asgResourceFilename: asgResourceFileName,
+      diskSize: 40
     )
     Map<String, String> params = [
       flavor               : parameters.instanceType,
@@ -91,7 +92,8 @@ class OpenstackOrchestrationV1ClientProviderSpec extends OpenstackClientProvider
       source_user_data     : 'echo foobar',
       tags                 : '{"foo":"bar"}',
       user_data            : parameters.rawUserData,
-      asg_resource_filename: asgResourceFileName
+      asg_resource_filename: asgResourceFileName,
+      disk_size            : '40'
     ]
     List<String> tags = loadBalancerIds.collect { "lb-${it}" }
     StackCreate stackCreate = Builders.stack().disableRollback(disableRollback).files(subtmpl).name(stackName).parameters(params).template(tmpl).timeoutMins(timeoutMins).tags(tags.join(',')).build()
@@ -345,7 +347,7 @@ class OpenstackOrchestrationV1ClientProviderSpec extends OpenstackClientProvider
     ServerGroupParameters parameters = new ServerGroupParameters(instanceType: instanceType, image: image,
       maxSize: maxSize, minSize: minSize, desiredSize: desiredSize, networkId: networkId, subnetId: subnetId,
       loadBalancers: loadBalancerIds, securityGroups: securityGroups, rawUserData: 'echo foobar', tags: ['foo':'bar'],
-      sourceUserDataType: 'Text', sourceUserData: 'echo foobar', asgResourceFilename: asgResourceFileName)
+      sourceUserDataType: 'Text', sourceUserData: 'echo foobar', asgResourceFilename: asgResourceFileName, diskSize: 40)
     Map<String, String> params = [
       flavor               : parameters.instanceType,
       image                : parameters.image,
@@ -369,7 +371,8 @@ class OpenstackOrchestrationV1ClientProviderSpec extends OpenstackClientProvider
       source_user_data     : 'echo foobar',
       tags                 : '{"foo":"bar"}',
       user_data            : parameters.rawUserData,
-      asg_resource_filename: asgResourceFileName
+      asg_resource_filename: asgResourceFileName,
+      disk_size            : '40'
     ]
     String template = "foo: bar"
     Map<String, String> subtmpl = [sub: "foo: bar"]

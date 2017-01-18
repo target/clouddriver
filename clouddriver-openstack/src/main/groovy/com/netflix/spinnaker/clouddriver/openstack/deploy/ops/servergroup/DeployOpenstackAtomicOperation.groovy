@@ -30,6 +30,7 @@ import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperation
 import com.netflix.spinnaker.clouddriver.orchestration.AtomicOperations
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
+import org.openstack4j.model.compute.Flavor
 import org.openstack4j.model.network.Subnet
 
 import java.util.concurrent.ConcurrentHashMap
@@ -163,6 +164,9 @@ class DeployOpenstackAtomicOperation implements TaskStatusAware, AtomicOperation
         task.updateStatus BASE_PHASE, "Resolved user data."
       }
 
+      //resolve flavor to use disk size
+      Flavor flav = provider.getFlavor(description.region, description.serverGroupParameters.instanceType)
+
       task.updateStatus BASE_PHASE, "Creating heat stack $stackName..."
       provider.deploy(description.region, stackName, template, subtemplates, description.serverGroupParameters.identity {
         networkId = subnet.networkId
@@ -170,6 +174,7 @@ class DeployOpenstackAtomicOperation implements TaskStatusAware, AtomicOperation
         sourceUserDataType = description.userDataType
         sourceUserData = description.userData
         asgResourceFilename = resourceFilename
+        diskSize = flav.disk
         it
       }, description.disableRollback, description.timeoutMins, description.serverGroupParameters.loadBalancers)
       task.updateStatus BASE_PHASE, "Finished creating heat stack $stackName."

@@ -16,6 +16,9 @@ parameters:
   desired_size:
     type: number
     description: Desired cluster size
+  disk_size:
+    type: number
+    description: Desired instance disk size, derived from the flavor
   network_id:
     type: string
     description: Network used by the servers. Retained for auditing purposes.
@@ -94,6 +97,7 @@ resources:
       resource:
         type: {get_param: asg_resource_filename}
         properties:
+          disk_size: {get_param: disk_size}
           flavor: {get_param: flavor}
           image: {get_param: image}
           # metering.stack is used by ceilometer to autoscale against instances that are part of this stack

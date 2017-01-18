@@ -30,6 +30,15 @@ import org.openstack4j.model.compute.Server
 interface OpenstackComputeProvider {
 
   /**
+   * Get a Flavor.
+   *
+   * @param region
+   * @param flavorName
+   * @return
+   */
+  Flavor getFlavor(String region, String flavorName)
+
+  /**
    * Returns a list of instances in a given region.
    * @param region
    * @return
